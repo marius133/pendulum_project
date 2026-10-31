@@ -2,23 +2,23 @@ import cadquery as cq
 from pathlib import Path
 from cadquery import exporters
 
-def make_arm(parameters):
+def make_stand(parameters):
 
     #Getting parameters from json file:
 
-    length = parameters["arm_length_mm"]
-    width = parameters["arm_width_mm"]
-    thickness = parameters["arm_thickness_mm"]
+    length = parameters["stand_length_mm"]
+    width = parameters["stand_width_mm"]
+    thickness = parameters["stand_thickness_mm"]
     hole_diameter = parameters["axle_hole_diameter_mm"]
     distance_from_end = parameters["hole_center_from_end_mm"]
     hole_y = length / 2 - distance_from_end
 
     #Create the actual geometry:
 
-    arm = cq.Workplane("XY").box(width,length,thickness) #Creates the arm that will hold the pendulum in the xy-plane
-    arm = arm.faces(">Z").workplane().center(0,hole_y).hole(hole_diameter) #Creates the hole in the arm
+    stand = cq.Workplane("XY").box(width,length,thickness) #Creates the arm that will hold the pendulum in the xy-plane
+    stand = stand.faces(">Z").workplane().center(0,hole_y).hole(hole_diameter) #Creates the hole in the arm
 
-    return arm
+    return stand
 
 def export_model_3mf(model, file_path, tolerance, angular_tolerance):
     output_file = Path(file_path)
