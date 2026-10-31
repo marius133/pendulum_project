@@ -1,16 +1,20 @@
-# This is a sample Python script.
+import json
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+#Reading json file
+def load_parameters(file_path):
+    with open(file_path, "r", encoding="utf-8") as file:
+        cad_parameters = json.load(file)
+    return cad_parameters
+
+#Json-parameter value validation
+def validate_parameters(cad_parameters):
+    for name, value in cad_parameters.items():
+        if value <= 0:
+            raise ValueError(f"{name} must be greater than zero. Not {value}")
+    print("All CAD parameters are positive")
+
+parameters = load_parameters("parameters.json")
+print(parameters)
+validate_parameters(parameters)
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
