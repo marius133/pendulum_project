@@ -1,8 +1,8 @@
 {
-  "stand_length_mm": 120.0,
+  "stand_length_mm": 100.0,
   "stand_width_mm": 20.0,
   "stand_thickness_mm": 5.0,
-  "stand_gap_mm": 20,
+  "stand_gap_mm": 40,
   "axle_hole_diameter_mm": 5.3,
   "hole_center_from_end_mm": 10.0,
 

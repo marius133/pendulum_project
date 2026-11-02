@@ -8,7 +8,7 @@ def make_stand(parameters):
 
     #Getting parameters from json file:
     slot_depth = parameters["slot_depth_mm"]
-    length = parameters["stand_length_mm"] - slot_depth #Compensates for the slot depth of the base for effective length
+    length = parameters["stand_length_mm"]
     width = parameters["stand_width_mm"]
     thickness = parameters["stand_thickness_mm"]
     hole_diameter = parameters["axle_hole_diameter_mm"]
@@ -51,6 +51,36 @@ def make_axle(parameters):
     length = parameters["stand_gap_mm"] + 2 * parameters["stand_thickness_mm"]
     axle = cq.Workplane("XY").cylinder(length,diameter / 2)
     return axle
+
+
+def make_assembly(parameters):
+    base = make_base(parameters)
+    stand_left = make_stand(parameters)
+    stand_right = make_stand(parameters)
+    axle = make_axle(parameters)
+
+    base_thickness = parameters["base_thickness_mm"]
+    stand_length = parameters["stand_length_mm"]
+    slot_depth = parameters["slot_depth_mm"]
+    hole_centered_from_end = parameters["hole_center_from_end_mm"]
+    stand_gap = parameters["stand_gap_mm"]
+    stand_thickness = parameters["stand_thickness_mm"]
+    stand_z = base_thickness / 2 - slot_depth + stand_length / 2
+
+    effective_length = stand_length - slot_depth
+    axle_z = base_thickness / 2 + effective_length - hole_centered_from_end
+    offset = (stand_gap + stand_thickness) / 2
+
+    assembly = cq.Assembly()
+    assembly.add(stand_left, name="stand_left",loc=cq.Location((0, -offset, stand_z),(1, 0, 0),90),)
+    assembly.add(stand_right, name="stand_right",loc=cq.Location((0, +offset, stand_z),(1, 0, 0),90),)
+    assembly.add(axle,name="axle",loc=cq.Location((0, 0, axle_z),(1, 0, 0),90),)
+    assembly.add(base,name="base")
+
+
+
+
+    return assembly
 
 def export_model_3mf(model, file_path, tolerance, angular_tolerance):
     output_file = Path(file_path)
