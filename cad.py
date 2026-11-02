@@ -1,7 +1,6 @@
 import cadquery as cq
 from pathlib import Path
 
-from PIL.ImageChops import offset
 from cadquery import exporters
 
 #Makes the stands (two identical) that will hold the pendulum:
@@ -47,6 +46,11 @@ def make_base(parameters):
     return base
 
 
+def make_axle(parameters):
+    diameter = parameters["axle_diameter_mm"]
+    length = parameters["stand_gap_mm"] + 2 * parameters["stand_thickness_mm"]
+    axle = cq.Workplane("XY").cylinder(length,diameter / 2)
+    return axle
 
 def export_model_3mf(model, file_path, tolerance, angular_tolerance):
     output_file = Path(file_path)
