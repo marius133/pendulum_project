@@ -45,7 +45,6 @@ def make_base(parameters):
     base = base.faces(">Z").workplane().pushPoints([(0, -offset),(0,offset)]).rect(stand_width + slot_clearance,stand_thickness + slot_clearance).cutBlind(-slot_depth)
     return base
 
-
 def make_axle(parameters):
     diameter = parameters["axle_diameter_mm"]
     length = parameters["stand_gap_mm"] + 2 * parameters["stand_thickness_mm"]
@@ -53,11 +52,49 @@ def make_axle(parameters):
     return axle
 
 
+def make_pendulum_arm(parameters):
+    cylinder_length = parameters["pendulum_cylinder_length_mm"]
+    cylinder_clearance = parameters["pendulum_cylinder_clearance_mm"]
+    cylinder_diameter = parameters["pendulum_cylinder_diameter_mm"]
+    hole_diameter = parameters["axle_diameter_mm"] + cylinder_clearance
+    arm_length = parameters["pendulum_arm_length_mm"]
+    arm_width = parameters["pendulum_arm_width_mm"]
+    arm_thickness = parameters["pendulum_arm_thickness_mm"]
+
+    hub = cq.Workplane("XY").cylinder(cylinder_length,cylinder_diameter / 2, centered=True)
+    pendulum_arm = cq.Workplane("XY").box(arm_width,arm_length,arm_thickness).translate((0, -arm_length/2,0))
+    pendulum = hub.union(pendulum_arm)
+
+    hole = cq.Workplane("XY").cylinder(max(cylinder_length,arm_thickness)+ 2, hole_diameter / 2, centered=True)
+
+    pendulum = pendulum.cut(hole)
+    return pendulum
+
+def make_weight(parameters):
+    width = parameters["pendulum_weight_width_mm"]
+    length = parameters["pendulum_weight_length_mm"]
+    thickness = parameters["pendulum_weight_thickness_mm"]
+    position = parameters["pendulum_weight_position_mm"]
+    weight = cq.Workplane("XY").box(width, length, thickness).translate((0, -position, 0))
+
+    return weight
+
+
+def make_pendulum(parameters):
+    arm = make_pendulum_arm(parameters)
+    weight = make_weight(parameters)
+    pendulum = arm.union(weight)
+
+    return pendulum
+
+
+
 def make_assembly(parameters):
     base = make_base(parameters)
     stand_left = make_stand(parameters)
     stand_right = make_stand(parameters)
     axle = make_axle(parameters)
+    pendulum = make_pendulum(parameters)
 
     base_thickness = parameters["base_thickness_mm"]
     stand_length = parameters["stand_length_mm"]
@@ -76,9 +113,7 @@ def make_assembly(parameters):
     assembly.add(stand_right, name="stand_right",loc=cq.Location((0, +offset, stand_z),(1, 0, 0),90),)
     assembly.add(axle,name="axle",loc=cq.Location((0, 0, axle_z),(1, 0, 0),90),)
     assembly.add(base,name="base")
-
-
-
+    assembly.add(pendulum, name="pendulum",loc=cq.Location((0,0,axle_z),(1,0,0),90,),)
 
     return assembly
 
