@@ -2,6 +2,16 @@
   "stand_length_mm": 120.0,
   "stand_width_mm": 20.0,
   "stand_thickness_mm": 5.0,
+  "stand_gap_mm": 20,
   "axle_hole_diameter_mm": 5.3,
-  "hole_center_from_end_mm": 10.0
+  "hole_center_from_end_mm": 10.0,
+
+  "base_length_mm": 100.0,
+  "base_width_mm": 80.0,
+  "base_thickness_mm": 5,
+  "slot_depth_mm": 3,
+  "slot_clearance_mm": 0.2,
+
+  "axle_diameter_mm": 5
+
 }
