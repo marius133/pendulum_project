@@ -13,10 +13,14 @@ axle = make_axle(parameters)
 
 assembly = make_assembly(parameters)
 
-export_path = Path(__file__).resolve().parent / "output" / "stand.3mf"
-export_model_3mf(stand,export_path,tolerance=0.1,angular_tolerance=0.1)
-export_model_3mf(base,export_path,tolerance=0.1,angular_tolerance=0.1)
-export_model_3mf(axle,export_path,tolerance=0.1,angular_tolerance=0.1)
+export_path = Path(__file__).resolve().parent / "output"
+
+export_model_3mf(stand,export_path / "stand.3mf",0.1,0.1)
+export_model_3mf(base,export_path / "base.3mf",0.1, 0.1)
+export_model_3mf(axle,export_path / "axle.3mf",0.1, 0.1)
+
+export_model_3mf(assembly.toCompound(),export_path / "assembly.3mf",0.1,0.1)
+
 print(f"Saved to: {export_path}")
 
 show(assembly)
