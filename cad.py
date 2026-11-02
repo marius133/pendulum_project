@@ -8,8 +8,8 @@ from cadquery import exporters
 def make_stand(parameters):
 
     #Getting parameters from json file:
-
-    length = parameters["stand_length_mm"]
+    slot_depth = parameters["slot_depth_mm"]
+    length = parameters["stand_length_mm"] - slot_depth #Compensates for the slot depth of the base for effective length
     width = parameters["stand_width_mm"]
     thickness = parameters["stand_thickness_mm"]
     hole_diameter = parameters["axle_hole_diameter_mm"]
