@@ -17,13 +17,14 @@
   "pendulum_cylinder_diameter_mm": 15,
   "pendulum_cylinder_clearance_mm": 0.2,
   "pendulum_cylinder_length_mm": 20,
-  "pendulum_arm_length_mm": 40,
+  "pendulum_arm_length_mm": 82,
   "pendulum_arm_width_mm": 10,
   "pendulum_arm_thickness_mm": 3,
 
   "pendulum_weight_width_mm": 20,
   "pendulum_weight_length_mm": 12,
   "pendulum_weight_thickness_mm": 10,
-  "pendulum_weight_position_mm": 32
+  "pendulum_weight_position_mm": 15,
+  "minimum_pendulum_clearance_mm": 3
 
 }
