@@ -158,7 +158,7 @@ def validate_parameters(cad_parameters):
     hub_radius = cad_parameters["pendulum_cylinder_diameter_mm"] / 2
     weight_thickness = cad_parameters["pendulum_weight_thickness_mm"]
 
-    if weight_thickness < stand_gap:
+    if weight_thickness >= stand_gap:
         raise ValueError("Weight thickness must be smaller than the stand gap")
 
     if weight_start < hub_radius:

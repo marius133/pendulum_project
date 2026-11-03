@@ -22,10 +22,10 @@ def make_stand(parameters):
 
     return stand
 
-#Makes the base in which the stands will be placed on for stability:
+# Makes the base in which the stands will be placed on for stability:
 def make_base(parameters):
 
-    #Getting parameters form json file:
+    # Getting parameters form json file:
 
     width = parameters["base_width_mm"]
     length = parameters["base_length_mm"]
@@ -38,10 +38,10 @@ def make_base(parameters):
 
     offset = (stand_gap + stand_thickness)/2
 
-    #Create the actual base part
+    # Create the actual base part
     base = cq.Workplane("XY").box(width,length,thickness)
 
-    #Create the slots for the stands so that they can stand on their own without glue or screws etc
+    # Create the slots for the stands so that they can stand on their own without glue or screws etc
     base = base.faces(">Z").workplane().pushPoints([(0, -offset),(0,offset)]).rect(stand_width + slot_clearance,stand_thickness + slot_clearance).cutBlind(-slot_depth)
     return base
 
