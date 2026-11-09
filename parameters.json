@@ -25,6 +25,8 @@
   "pendulum_weight_length_mm": 12,
   "pendulum_weight_thickness_mm": 10,
   "pendulum_weight_position_mm": 15,
-  "minimum_pendulum_clearance_mm": 3
+  "minimum_pendulum_clearance_mm": 3,
+
+  "material_density_m3": 1240
 
 }
