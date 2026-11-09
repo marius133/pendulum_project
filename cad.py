@@ -1,6 +1,5 @@
 import cadquery as cq
 from pathlib import Path
-
 from cadquery import exporters
 
 #Makes the stands (two identical) that will hold the pendulum:
@@ -51,7 +50,6 @@ def make_axle(parameters):
     axle = cq.Workplane("XY").cylinder(length,diameter / 2)
     return axle
 
-
 def make_pendulum_arm(parameters):
     cylinder_length = parameters["pendulum_cylinder_length_mm"]
     cylinder_clearance = parameters["pendulum_cylinder_clearance_mm"]
@@ -79,15 +77,12 @@ def make_weight(parameters):
 
     return weight
 
-
 def make_pendulum(parameters):
     arm = make_pendulum_arm(parameters)
     weight = make_weight(parameters)
     pendulum = arm.union(weight)
 
     return pendulum
-
-
 
 def make_assembly(parameters):
     base = make_base(parameters)

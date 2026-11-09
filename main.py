@@ -20,7 +20,6 @@ export_model_3mf(base,export_path / "base.3mf",0.1, 0.1)
 export_model_3mf(axle,export_path / "axle.3mf",0.1, 0.1)
 export_model_3mf(pendulum,export_path / "pendulum.3mf",0.1, 0.1)
 
-
 export_model_3mf(assembly.toCompound(),export_path / "assembly.3mf",0.1,0.1)
 
 print(f"Saved to: {export_path}")
