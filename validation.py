@@ -7,6 +7,26 @@ def load_parameters(file_path):
         cad_parameters = json.load(file)
     return cad_parameters
 
+def validate_float(form_data, field_name, label):
+    raw_value = form_data.get(field_name,"")
+    try:
+        value = float(raw_value)
+    except ValueError:
+        raise ValueError(f"{label} must be a number")
+
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError(f"{label} must be greater than zero and finite")
+
+    return value
+
+def validate_order(form_data):
+
+    period_s = validate_float(form_data, "target_period_s", "Swing period")
+    axle_diameter_mm = validate_float(form_data,"axle_diameter_mm", "Axle diameter")
+
+    return {"target_period_s": period_s, "axle_diameter_mm": axle_diameter_mm}
+
+
 def validate_parameters(cad_parameters):
     required_parameters = (
       "stand_length_mm",
