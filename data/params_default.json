@@ -1,0 +1,25 @@
+{
+  "arm":       {"length": 110, "width": 10, "thickness": 6, "hub_diameter": 16},
+  "weight":    {"diameter": 30, "height": 20},
+  "axle":      {"diameter": 5, "overhang": 3},
+  "stand":     {"width": 30, "height": 140, "thickness": 6, "axle_offset": 12, "tab_length": 20},
+  "base":      {"width": 100, "thickness": 6, "margin": 15},
+  "clearance": {"fit": 0.3, "press_fit": 0.1, "rotation": 0.4, "side_gap": 2, "ground": 5, "min_wall": 1.2},
+  "printer":   {"bed_x": 250, "bed_y": 210, "max_z": 220, "part_gap": 5},
+  "print": {
+    "layer_height": 0.2,
+    "line_width": 0.45,
+    "walls": 2,
+    "top_bottom_layers": 4,
+    "infill": 0.15,
+    "infill_per_part": {"weight": 1.0}
+  },
+  "materials": {
+    "base":   {"filament_id": null, "name": "PLA", "density": 1.24},
+    "stand":  {"filament_id": null, "name": "PLA", "density": 1.24},
+    "arm":    {"filament_id": null, "name": "PLA", "density": 1.24},
+    "weight": {"filament_id": null, "name": "PLA", "density": 1.24},
+    "axle":   {"filament_id": null, "name": "PLA", "density": 1.24}
+  },
+  "simulation": {"amplitude_deg": 10}
+}

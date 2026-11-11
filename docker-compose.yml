@@ -1,0 +1,13 @@
+# Spoolman = the material stock. Start:  docker compose up -d
+# Web UI and REST API: http://localhost:7912  (API under /api/v1/)
+# The version is pinned so the project runs the same way during assessment.
+services:
+  spoolman:
+    image: ghcr.io/donkie/spoolman:0.27.0
+    restart: unless-stopped
+    ports:
+      - "7912:8000"
+    volumes:
+      - ./spoolman_data:/home/app/.local/share/spoolman
+    environment:
+      - TZ=Europe/Oslo
