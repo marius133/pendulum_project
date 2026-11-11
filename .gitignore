@@ -1,6 +1,5 @@
-.vs/
+.idea/
 .venv/
 __pycache__/
 *.pyc
-.pytest_cache/
-spoolman_data/
+/output/
