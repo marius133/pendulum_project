@@ -28,13 +28,20 @@
 
     <fieldset>
         <legend> Choose a filament </legend>
-        <label for="base_spool_id">Filament for base</label>
-        <select id="base_spool_id" name="base_spool_id" required>
-            <option value="">Choose a filament</option>
-            {% for spool_id, label in spools.items() %}
-            <option value="{{ spool_id }}">{{ label }}</option>
-            {% endfor %}
-        </select>
+        <p>
+    <label for="base_filament_id">Filament for base</label>
+    <select id="base_filament_id" name="base_filament_id" required>
+        <option value="">Choose a filament</option>
+
+        {% for filament in filaments %}
+            <option value="{{ filament['id'] }}">
+                {{ filament['name'] }} ({{ filament['density'] }} g/cm³)
+            </option>
+        {% else %}
+            <option disabled>No filaments available</option>
+        {% endfor %}
+    </select>
+</p>
     </fieldset>
 
     <button type="submit">Send order</button>

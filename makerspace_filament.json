@@ -1,0 +1,13 @@
+[
+  {
+    "filament": {
+      "name": "PLA black",
+      "material": "PLA",
+      "density": 1.24,
+      "diameter": 1.75
+    },
+    "spool": {
+      "initial_weight": 1000
+    }
+  }
+]

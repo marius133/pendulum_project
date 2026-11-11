@@ -3,19 +3,17 @@ from flask import Flask, render_template,request
 from validation import validate_order
 from pathlib import Path
 from itertools import count
+from spoolman_client import get_filaments
 
 app = Flask(__name__)
 @app.get("/")
 
 # Displays the pendulum order form
 def show_order_form():
-    return render_template("order.html", spools=SPOOLS)
+    filaments = get_filaments()
+    return render_template("order.html", filaments=filaments)
 
 # Test-data for filament (will be removed when spoolman api is in place)
-SPOOLS = {
-    "12": "PLA - black",
-    "15": "PLA - blue",
-}
 @app.post("/orders")
 
 # Save valid orders and pass validation errors to the order form
