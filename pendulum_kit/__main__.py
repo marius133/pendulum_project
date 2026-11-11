@@ -1,12 +1,3 @@
-"""
-Command line demo: design a kit for a period, print masses and period, export files.
-
-    python -m pendulum_kit                         # default parameters as they are
-    python -m pendulum_kit --period 0.7            # solve arm length + weight for 0.7 s
-    python -m pendulum_kit --period 0.7 --weight 30 --max-height 200 --out output/order_001
-
-AI-assisted: first version generated with Claude (Anthropic).
-"""
 from __future__ import annotations
 
 import argparse
@@ -15,7 +6,6 @@ import sys
 from .design import DesignError, DesignRequest, design_for_period
 from .params import DEFAULT_PARAMS_FILE, KitParameters, ParameterError
 from .physics import kit_masses, pendulum_properties, total_material_g
-
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="python -m pendulum_kit")

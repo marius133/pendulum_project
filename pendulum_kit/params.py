@@ -1,17 +1,3 @@
-"""
-params.py - The shared description of one pendulum kit.
-
-All parameters live in ONE JSON file (see data/params_default.json). The CAD model,
-the mass/period calculations and the simulation all read the same KitParameters
-object, so they can never disagree about a dimension.
-
-Units: millimetres, grams, g/cm^3 for density, seconds.
-
-Coordinate system for the ASSEMBLED kit:
-    X = along the axle, Y = the direction the pendulum swings, Z = up.
-
-AI-assisted: first version generated with Claude (Anthropic).
-"""
 from __future__ import annotations
 
 import copy
@@ -21,17 +7,13 @@ from pathlib import Path
 
 import jsonschema
 
-# Part names used everywhere (CAD, masses, filaments). "stand" covers both stand sides.
+
 PARTS = ("base", "stand", "arm", "weight", "axle")
 PART_COUNT = {"base": 1, "stand": 2, "arm": 1, "weight": 1, "axle": 1}
-SWINGING_PARTS = ("arm", "weight")   # the axle is pressed into the stands and stays still
+SWINGING_PARTS = ("arm", "weight")  
 
 DEFAULT_PARAMS_FILE = Path(__file__).resolve().parent.parent / "data" / "params_default.json"
 
-
-# ---------------------------------------------------------------------------
-# JSON Schema: structure, types and "positive dimension" rules
-# ---------------------------------------------------------------------------
 
 def _section(positive=(), non_negative=(), extra=None):
     props = {n: {"type": "number", "exclusiveMinimum": 0} for n in positive}
@@ -92,7 +74,6 @@ SCHEMA["properties"]["print"]["required"] += ["walls", "top_bottom_layers", "inf
 
 
 class ParameterError(ValueError):
-    """Raised when parameters break one or more rules. `errors` lists every problem found."""
 
     def __init__(self, errors):
         self.errors = list(errors)
@@ -100,7 +81,6 @@ class ParameterError(ValueError):
 
 
 def deep_merge(base: dict, updates: dict) -> dict:
-    """Return a copy of `base` where nested dicts from `updates` are merged in."""
     result = copy.deepcopy(base)
     for key, value in updates.items():
         if isinstance(value, dict) and isinstance(result.get(key), dict):
@@ -111,14 +91,12 @@ def deep_merge(base: dict, updates: dict) -> dict:
 
 
 class KitParameters:
-    """Wraps the parameter dict: loading/saving, validation and derived dimensions."""
 
     def __init__(self, data: dict, validate: bool = True):
         self.data = copy.deepcopy(data)
         if validate:
             self.validate()
 
-    # ----- loading and saving -------------------------------------------------
     @classmethod
     def load(cls, path=DEFAULT_PARAMS_FILE, validate: bool = True) -> "KitParameters":
         with open(path, encoding="utf-8") as f:
@@ -133,21 +111,17 @@ class KitParameters:
         return copy.deepcopy(self.data)
 
     def with_updates(self, updates: dict, validate: bool = True) -> "KitParameters":
-        """New KitParameters with some values changed, e.g. {"arm": {"length": 120}}."""
         return KitParameters(deep_merge(self.data, updates), validate=validate)
 
     def __getitem__(self, key):
         return self.data[key]
 
-    # ----- derived dimensions (used by several parts and by the physics) -------
     @property
     def inner_gap(self) -> float:
-        """Space between the two stand sides. The weight is the widest swinging part."""
         return self["weight"]["diameter"] + 2 * self["clearance"]["side_gap"]
 
     @property
     def stand_x_positions(self) -> tuple[float, float]:
-        """X position of the centre of each stand side (assembled)."""
         x = self.inner_gap / 2 + self["stand"]["thickness"] / 2
         return (-x, x)
 
@@ -157,7 +131,6 @@ class KitParameters:
 
     @property
     def pivot_height(self) -> float:
-        """Height of the axle centre above the top of the base."""
         return self["stand"]["height"] - self["stand"]["axle_offset"]
 
     @property
@@ -166,30 +139,26 @@ class KitParameters:
 
     @property
     def weight_centre_distance(self) -> float:
-        """Axle to weight centre. The weight is flush with the end of the arm."""
         return self["arm"]["length"] - self["weight"]["height"] / 2
 
     @property
     def ground_clearance(self) -> float:
-        """Gap between the lowest point of the arm/weight and the top of the base."""
         return self.pivot_height - self["arm"]["length"]
 
     @property
     def total_height(self) -> float:
-        """Height of the assembled kit."""
         return self["base"]["thickness"] + self["stand"]["height"]
 
     @property
     def axle_hole_stand(self) -> float:
-        return self["axle"]["diameter"] + self["clearance"]["press_fit"]   # snug: axle stays put
+        return self["axle"]["diameter"] + self["clearance"]["press_fit"]   
 
     @property
     def axle_hole_arm(self) -> float:
-        return self["axle"]["diameter"] + self["clearance"]["rotation"]    # loose: arm swings
+        return self["axle"]["diameter"] + self["clearance"]["rotation"]    
 
     @property
     def weight_hole(self) -> tuple[float, float]:
-        """(along swing direction Y, along axle X) size of the hole the arm slides into."""
         fit = self["clearance"]["fit"]
         return (self["arm"]["width"] + fit, self["arm"]["thickness"] + fit)
 
@@ -201,32 +170,29 @@ class KitParameters:
         return self["materials"][part]["density"]
 
     def print_bounding_boxes(self) -> dict[str, tuple[float, float, float]]:
-        """(x, y, z) size of each part in its print orientation (lying on the bed)."""
         a, w, s, b, ax = self["arm"], self["weight"], self["stand"], self["base"], self["axle"]
         return {
             "base": (self.base_length, b["width"], b["thickness"]),
-            "stand": (s["width"], s["height"] + b["thickness"], s["thickness"]),  # flat, tab below
+            "stand": (s["width"], s["height"] + b["thickness"], s["thickness"]),  
             "arm": (max(a["width"], a["hub_diameter"]), a["length"] + a["hub_diameter"] / 2,
                     a["thickness"]),
-            "weight": (w["diameter"], w["diameter"], w["height"]),                  # standing
-            "axle": (ax["diameter"], ax["diameter"], self.axle_length),             # standing
+            "weight": (w["diameter"], w["diameter"], w["height"]),                 
+            "axle": (ax["diameter"], ax["diameter"], self.axle_length),            
         }
 
-    # ----- validation -----------------------------------------------------------
     def validate(self) -> None:
         errors = self.check()
         if errors:
             raise ParameterError(errors)
 
     def check(self) -> list[str]:
-        """Return a list of every rule that is broken (empty list = valid)."""
         validator = jsonschema.Draft7Validator(SCHEMA)
         schema_errors = [
             f"{'/'.join(str(x) for x in e.absolute_path) or '(root)'}: {e.message}"
             for e in sorted(validator.iter_errors(self.data), key=lambda e: list(e.absolute_path))
         ]
         if schema_errors:
-            return schema_errors      # geometric rules need a structurally valid file
+            return schema_errors     
         return self._geometric_errors()
 
     def _geometric_errors(self) -> list[str]:
@@ -238,14 +204,12 @@ class KitParameters:
             if not ok:
                 errors.append(message)
 
-        # Arm and hub
         rule(a["hub_diameter"] >= a["width"],
              f"arm hub diameter ({a['hub_diameter']}) must be at least the arm width ({a['width']})")
         rule(a["hub_diameter"] >= self.axle_hole_arm + 2 * wall,
              f"arm hub ({a['hub_diameter']}) too small for the axle hole "
              f"({self.axle_hole_arm:.2f}) plus {wall} mm walls")
 
-        # Weight within the arm, and the hole fits inside the weight
         rule(w["height"] <= a["length"] - a["hub_diameter"] / 2,
              f"weight (height {w['height']}) does not fit on the arm below the hub "
              f"(arm length {a['length']}, hub radius {a['hub_diameter'] / 2})")
@@ -255,12 +219,10 @@ class KitParameters:
              f"weight diameter ({w['diameter']}) too small for the arm hole "
              f"({hole_y:.1f} x {hole_x:.1f}) plus {wall} mm walls")
 
-        # Clearance to the base
         rule(self.ground_clearance >= c["ground"],
              f"clearance to the base is {self.ground_clearance:.1f} mm, needs at least {c['ground']} mm "
              f"(make the stand taller or the arm shorter)")
 
-        # Stand sides
         rule(s["axle_offset"] >= self.axle_hole_stand / 2 + wall,
              f"axle hole too close to the top of the stand (axle_offset {s['axle_offset']})")
         rule(s["width"] >= self.axle_hole_stand + 2 * wall,
@@ -272,7 +234,6 @@ class KitParameters:
         rule(b["width"] >= s["width"],
              f"base width ({b['width']}) should be at least the stand width ({s['width']}) for stability")
 
-        # Build volume: parts may be turned 90 degrees on the bed
         pr = self["printer"]
         bed = sorted((pr["bed_x"], pr["bed_y"]))
         for part, (x, y, z) in self.print_bounding_boxes().items():

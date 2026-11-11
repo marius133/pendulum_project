@@ -1,20 +1,3 @@
-"""
-physics.py - Mass of each printed part and the swing period of the pendulum.
-
-Mass model (FDM print):
-    shell volume  = side_area * (walls * line_width) + cap_area * (top_bottom_layers * layer_height)
-                    (limited to the part volume - thin parts end up solid)
-    mass          = density * (shell volume + infill * (volume - shell volume))
-
-Period model: physical (compound) pendulum, small angles [OpenStax, Univ. Physics 1, 15.4]:
-    T0 = 2*pi*sqrt(I / (m*g*d))
-    I = moment of inertia of arm + weight about the axle, m = their mass,
-    d = distance from the axle to their common centre of mass.
-Each part is treated as having a uniform "effective density" = mass / volume.
-Larger amplitudes: T = T0 * (1 + theta^2/16 + 11*theta^4/3072) (series expansion).
-
-AI-assisted: first version generated with Claude (Anthropic).
-"""
 from __future__ import annotations
 
 import math
@@ -24,17 +7,16 @@ from dataclasses import dataclass
 from .geometry import PartGeometry, kit_geometry
 from .params import PART_COUNT, PARTS, SWINGING_PARTS, KitParameters
 
-G_MM_S2 = 9810.0     # gravity in mm/s^2 (9.81 m/s^2)
-
+G_MM_S2 = 9810.0     #mm/s^2
 
 @dataclass(frozen=True)
 class PartMass:
     name: str
-    count: int                  # how many of this part are in the kit
+    count: int                  
     volume_mm3: float
     shell_volume_mm3: float
-    mass_g: float               # one piece
-    effective_density: float    # g/mm^3 (mass / volume)
+    mass_g: float             
+    effective_density: float    # g/mm^3
 
     @property
     def total_mass_g(self) -> float:
@@ -43,12 +25,12 @@ class PartMass:
 
 @dataclass(frozen=True)
 class PendulumProperties:
-    mass_g: float               # arm + weight
-    com_distance_mm: float      # axle -> common centre of mass
-    inertia_g_mm2: float        # about the axle
-    period_s: float             # small-angle period
-    period_amplitude_s: float   # period at the amplitude in params["simulation"]
-    equivalent_length_mm: float  # length of a simple pendulum with the same period
+    mass_g: float        
+    com_distance_mm: float  
+    inertia_g_mm2: float   
+    period_s: float       
+    period_amplitude_s: float 
+    equivalent_length_mm: float  
 
 
 def shell_volume(geom: PartGeometry, print_settings: dict) -> float:
@@ -60,8 +42,8 @@ def shell_volume(geom: PartGeometry, print_settings: dict) -> float:
 def part_mass(geom: PartGeometry, density_g_cm3: float, infill: float,
               print_settings: dict, count: int = 1) -> PartMass:
     shell = shell_volume(geom, print_settings)
-    printed_volume = shell + infill * (geom.volume - shell)       # mm^3 of plastic
-    mass = density_g_cm3 * printed_volume / 1000.0                # mm^3 -> cm^3
+    printed_volume = shell + infill * (geom.volume - shell)       
+    mass = density_g_cm3 * printed_volume / 1000.0              
     return PartMass(geom.name, count, geom.volume, shell, mass, mass / geom.volume)
 
 
@@ -78,8 +60,6 @@ def total_material_g(masses: dict[str, PartMass]) -> float:
 
 
 def material_per_filament(p: KitParameters, masses: dict[str, PartMass]) -> dict:
-    """Grams needed per filament, e.g. {3: 41.2, 5: 18.0}. Parts without a
-    filament_id are grouped under their material name instead."""
     needed = defaultdict(float)
     for part, m in masses.items():
         mat = p["materials"][part]
@@ -117,3 +97,4 @@ def pendulum_properties(p: KitParameters, masses: dict[str, PartMass] | None = N
         period_amplitude_s=amplitude_correction(t0, amp),
         equivalent_length_mm=inertia / (m_total * d),
     )
+
