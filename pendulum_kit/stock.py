@@ -1,3 +1,16 @@
+"""
+stock.py - Load the makerspace filaments into Spoolman (POST), once.
+
+Usage:
+    docker compose up -d
+    python -m pendulum_kit.stock                      # uses data/filaments.json
+    python -m pendulum_kit.stock --url http://localhost:7912 --file data/filaments.json
+
+Safe to run again: a filament that already exists (same name and vendor) is not
+created twice, and a spool is only added for filaments that have no spool yet.
+
+AI-assisted: first version generated with Claude (Anthropic).
+"""
 from __future__ import annotations
 
 import argparse
@@ -25,6 +38,7 @@ def load_stock_file(path=DEFAULT_STOCK_FILE) -> dict:
 
 
 def register_stock(client: SpoolmanClient, stock: dict) -> list[dict]:
+    """Create vendors, filaments and one spool per filament. Returns a report list."""
     report = []
     location = stock.get("location")
     for fil in stock["filaments"]:

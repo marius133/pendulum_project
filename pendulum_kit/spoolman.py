@@ -1,3 +1,23 @@
+"""
+spoolman.py - REST client for Spoolman, the material stock.
+
+Spoolman runs locally in Docker (see docker-compose.yml) on http://localhost:7912,
+with the REST API under /api/v1/. Endpoints used:
+    GET  /health                 is the service up?
+    GET  /vendor, POST /vendor   filament manufacturers
+    GET  /filament, POST /filament, GET /filament/{id}
+    GET  /spool,    POST /spool,    GET /spool/{id}
+    PUT  /spool/{id}/use         register filament used: {"use_weight": grams}
+
+Error handling: every failure becomes a SpoolmanError subclass with a readable message,
+so the order processing can reject/postpone an order and say why.
+
+Material for an order is handled in two steps so nothing is half-registered:
+    allocation = client.reserve(needed)    # checks ALL filaments first, raises if short
+    client.register_use(allocation)        # then PUT /use for each spool
+
+AI-assisted: first version generated with Claude (Anthropic).
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -42,12 +62,14 @@ class SpoolmanClient:
         self.api = self.base_url + "/api/v1"
         self.timeout = timeout
         self.session = requests.Session()
-
+        # Retry GETs a couple of times (container may be starting); never retry POST/PUT,
+        # because repeating a PUT /use would register the same material twice.
         retry = Retry(total=retries, backoff_factor=0.3, status_forcelist=(502, 503, 504),
                       allowed_methods=frozenset({"GET"}))
         self.session.mount("http://", HTTPAdapter(max_retries=retry))
         self.session.mount("https://", HTTPAdapter(max_retries=retry))
 
+    # ----- low level ---------------------------------------------------------------
     def _request(self, method: str, path: str, **kwargs):
         url = self.api + path
         try:
@@ -80,6 +102,7 @@ class SpoolmanClient:
     def _put(self, path, data):
         return self._request("PUT", path, json=data)
 
+    # ----- service -----------------------------------------------------------------
     def is_available(self) -> bool:
         try:
             self._get("/health")
@@ -87,12 +110,14 @@ class SpoolmanClient:
         except SpoolmanError:
             return False
 
+    # ----- vendors -----------------------------------------------------------------
     def find_or_create_vendor(self, name: str) -> dict:
         for vendor in self._get("/vendor", name=name):
             if vendor["name"] == name:
                 return vendor
         return self._post("/vendor", {"name": name})
 
+    # ----- filaments ---------------------------------------------------------------
     def list_filaments(self, **filters) -> list[dict]:
         return self._get("/filament", **filters)
 
@@ -100,8 +125,10 @@ class SpoolmanClient:
         return self._get(f"/filament/{filament_id}")
 
     def create_filament(self, data: dict) -> dict:
+        """data needs at least "density" (g/cm^3) and "diameter" (mm)."""
         return self._post("/filament", data)
 
+    # ----- spools ------------------------------------------------------------------
     def list_spools(self, filament_id: int | None = None) -> list[dict]:
         if filament_id is None:
             return self._get("/spool")
@@ -115,6 +142,7 @@ class SpoolmanClient:
                                      **extra})
 
     def use_filament(self, spool_id: int, grams: float) -> dict:
+        """PUT /spool/{id}/use - subtracts `grams` from the spool."""
         if grams <= 0:
             raise ValueError("grams must be positive")
         return self._put(f"/spool/{spool_id}/use", {"use_weight": grams})
@@ -122,8 +150,15 @@ class SpoolmanClient:
     def remaining_g(self, filament_id: int) -> float:
         return sum(s.get("remaining_weight") or 0 for s in self.list_spools(filament_id))
 
+    # ----- material for an order -------------------------------------------------------
     def reserve(self, needed: dict[int, float]) -> list[SpoolUse]:
-       
+        """Pick a spool for every filament without changing anything.
+
+        One part is printed from one spool, so each filament must fit on ONE spool.
+        Best fit: choose the spool with the least remaining material that is still
+        enough - this uses up nearly empty spools first.
+        Raises InsufficientMaterial listing every filament that is short.
+        """
         allocation, shortages = [], {}
         for filament_id, grams in needed.items():
             try:

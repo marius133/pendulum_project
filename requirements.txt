@@ -1,7 +1,1 @@
-numpy>=1.26
-jsonschema>=4.0
-requests>=2.31
-cadquery>=2.4        # parametric CAD + 3MF export
-flask>=3.0           # GUI (next step) and the fake Spoolman used in tests
-pytest>=8.0
-# mujoco>=3.0        # simulation (next step)
+cadquery
