@@ -1,0 +1,38 @@
+[
+  {
+    "filament": {
+      "name": "PLA+HS (White)",
+      "material": "PLA+HS",
+      "density": 1.24,
+      "diameter": 1.75
+    },
+    "spool": {
+      "stock_id": "makerspace-1",
+      "initial_weight": 1000
+    }
+  },
+  {
+    "filament": {
+      "name": "PLA+HS (Black)",
+      "material": "PLA+HS",
+      "density": 1.24,
+      "diameter": 1.75
+    },
+    "spool": {
+      "stock_id": "makerspace-2",
+      "initial_weight": 1000
+    }
+  },
+   {
+    "filament": {
+      "name": "PLA+HS (Light Khaki)",
+      "material": "PLA+HS",
+      "density": 1.24,
+      "diameter": 1.75
+    },
+    "spool": {
+      "stock_id": "makerspace-3",
+      "initial_weight": 1000
+    }
+  }
+]

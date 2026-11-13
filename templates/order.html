@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+
+{% if error %}
+<p role="alert">{{ error }}</p>
+{% endif %}
+{% if order %}
+<p role="status">
+    Order saved. Requested period {{ order.target_period_s }} s,
+    axle diameter {{ order.axle_diameter_mm }} mm.
+</p>
+{% endif %}
+<form method="post" action="{{ url_for('create_order') }}">
+    <fieldset>
+        <legend>Pendulum requirements</legend>
+
+        <p>
+            <label for="target_period_s">Requested swing period (s)</label>
+            <input id="target_period_s" name="target_period_s"
+                   type="number" step="any" required>
+        </p>
+
+        <p>
+            <label for="axle_diameter_mm">Axle diameter (mm)</label>
+            <input id="axle_diameter_mm" name="axle_diameter_mm"
+                   type="number" step="any" required>
+        </p>
+    </fieldset>
+
+    <fieldset>
+        <legend> Choose a filament spool </legend>
+        <p>
+    <label for="base_spool_id">Spool for base</label>
+    <select id="base_spool_id" name="base_spool_id" required>
+        <option value="">Choose a spool</option>
+
+        {% for spool in spools %}
+            <option value="{{ spool['id'] }}">
+                {{ spool['filament']['name'] }} (spool #{{ spool['id'] }})
+            </option>
+        {% else %}
+            <option disabled>No spools available</option>
+        {% endfor %}
+    </select>
+</p>
+    <p>
+    <label for="side_spool_id">Spool for sides</label>
+    <select id="side_spool_id" name="side_spool_id" required>
+        <option value="">Choose a spool</option>
+
+        {% for spool in spools %}
+            <option value="{{ spool['id'] }}">
+                {{ spool['filament']['name'] }} (spool #{{ spool['id'] }})
+            </option>
+        {% else %}
+            <option disabled>No spools available</option>
+        {% endfor %}
+    </select>
+</p>
+    <p>
+    <label for="pendulum_spool_id">Spool for pendulum</label>
+    <select id="pendulum_spool_id" name="pendulum_spool_id" required>
+        <option value="">Choose a spool</option>
+
+        {% for spool in spools %}
+            <option value="{{ spool['id'] }}">
+                {{ spool['filament']['name'] }} (spool #{{ spool['id'] }})
+            </option>
+        {% else %}
+            <option disabled>No spools available</option>
+        {% endfor %}
+    </select>
+</p>
+     <p>
+    <label for="axle_spool_id">Spool for axle</label>
+    <select id="axle_spool_id" name="axle_spool_id" required>
+        <option value="">Choose a spool</option>
+
+        {% for spool in spools %}
+            <option value="{{ spool['id'] }}">
+                {{ spool['filament']['name'] }} (spool #{{ spool['id'] }})
+            </option>
+        {% else %}
+            <option disabled>No spools available</option>
+        {% endfor %}
+    </select>
+</p>
+
+    </fieldset>
+
+    <button type="submit">Send order</button>
+</form>

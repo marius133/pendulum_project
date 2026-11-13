@@ -7,6 +7,45 @@ def load_parameters(file_path):
         cad_parameters = json.load(file)
     return cad_parameters
 
+def validate_float(form_data, field_name, label):
+    raw_value = form_data.get(field_name,"")
+    try:
+        value = float(raw_value)
+    except ValueError:
+        raise ValueError(f"{label} must be a number")
+
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError(f"{label} must be greater than zero and finite")
+
+    return value
+
+def validate_order(form_data, available_spool_ids):
+
+    period_s = validate_float(form_data, "target_period_s", "Swing period")
+    axle_diameter_mm = validate_float(form_data,"axle_diameter_mm", "Axle diameter")
+    spool_ids = {}
+
+    for part in ("base", "side", "pendulum", "axle"):
+        field_name = f"{part}_spool_id"
+        raw_value = form_data.get(field_name, "")
+
+        try:
+            spool_id = int(raw_value)
+        except ValueError:
+            raise ValueError(f"Select a valid spool for the {part}.")
+
+        if spool_id not in available_spool_ids:
+            raise ValueError(f"The selected spool for the {part} is no longer available.")
+
+        spool_ids[part] = spool_id
+
+    return {
+        "target_period_s": period_s,
+        "axle_diameter_mm": axle_diameter_mm,
+        "spool_ids": spool_ids,
+    }
+
+
 def validate_parameters(cad_parameters):
     required_parameters = (
       "stand_length_mm",
