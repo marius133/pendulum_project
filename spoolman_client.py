@@ -1,3 +1,5 @@
+from operator import truediv
+
 import requests
 
 api_url = "http://127.0.0.1:7912/api/v1"
@@ -23,8 +25,14 @@ def get_filaments():
     filaments = response.json()
     return filaments
 
-def get_spools():
+def get_spools(include_archived=True):
+
+    if include_archived:
+        allow_archived = "true"
+    else:
+        allow_archived = "false"
+
     response = requests.get(
-        f"{api_url}/spool",params={"allow_archived": "true"},timeout=5,)
+        f"{api_url}/spool",params={f"allow_archived": allow_archived},timeout=5,)
     response.raise_for_status()
     return response.json()

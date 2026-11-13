@@ -3,27 +3,30 @@ from flask import Flask, render_template,request
 from validation import validate_order
 from pathlib import Path
 from itertools import count
-from spoolman_client import get_filaments
+from spoolman_client import get_spools
 
 app = Flask(__name__)
 @app.get("/")
 
 # Displays the pendulum order form
 def show_order_form():
-    filaments = get_filaments()
-    return render_template("order.html", filaments=filaments)
+    spools = get_spools(include_archived=False)
+    return render_template("order.html", spools=spools)
 
-# Test-data for filament (will be removed when spoolman api is in place)
 @app.post("/orders")
 
 # Save valid orders and pass validation errors to the order form
 def create_order():
+
+    spools = get_spools(include_archived=False)
+    available_spool_ids = {spool["id"] for spool in spools}
+
     try:
-        order = validate_order(request.form)
+        order = validate_order(request.form,available_spool_ids)
     except ValueError as error:
-        return render_template("order.html", error=str(error)), 400
+        return render_template("order.html", error=str(error), spools=spools), 400
     save_order(order)
-    return render_template("order.html",order=order)
+    return render_template("order.html",order=order, spools=spools)
 
 # Save orders as json-file in dir "orders" with unique id per order (counting from one and up)
 def save_order(order):
