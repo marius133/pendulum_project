@@ -3,14 +3,16 @@ from flask import Flask, render_template,request
 from validation import validate_order
 from pathlib import Path
 from itertools import count
-from spoolman_client import get_spools
+from spoolman_client import SpoolmanClient
+from dataclasses import asdict
 
 app = Flask(__name__)
+spoolman = SpoolmanClient()
 @app.get("/")
 
 # Displays the pendulum order form
 def show_order_form():
-    spools = get_spools(include_archived=False)
+    spools = spoolman.get_spools(include_archived=False)
     return render_template("order.html", spools=spools)
 
 @app.post("/orders")
@@ -18,7 +20,7 @@ def show_order_form():
 # Save valid orders and pass validation errors to the order form
 def create_order():
 
-    spools = get_spools(include_archived=False)
+    spools = spoolman.get_spools(include_archived=False)
     available_spool_ids = {spool["id"] for spool in spools}
 
     try:
@@ -38,7 +40,7 @@ def save_order(order):
 
         try:
             with order_path.open("x", encoding="utf-8") as file:
-                json.dump(order, file, indent=4)
+                json.dump(asdict(order), file, indent=4)
         except FileExistsError:
             continue
         return

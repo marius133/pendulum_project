@@ -1,5 +1,6 @@
 import math
 import json
+from order import Order
 
 # Reading json file
 def load_parameters(file_path):
@@ -39,11 +40,7 @@ def validate_order(form_data, available_spool_ids):
 
         spool_ids[part] = spool_id
 
-    return {
-        "target_period_s": period_s,
-        "axle_diameter_mm": axle_diameter_mm,
-        "spool_ids": spool_ids,
-    }
+    return Order(target_period_s=period_s,axle_diameter_mm=axle_diameter_mm,spool_ids=spool_ids,)
 
 
 def validate_parameters(cad_parameters):
