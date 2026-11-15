@@ -1,6 +1,8 @@
 import cadquery as cq
 from pathlib import Path
 from cadquery import exporters
+from ezdxf.entities import tolerance
+
 
 #Makes the stands (two identical) that will hold the pendulum:
 def make_stand(parameters):
@@ -116,3 +118,15 @@ def export_model_3mf(model, file_path, tolerance, angular_tolerance):
     output_file = Path(file_path)
     output_file.parent.mkdir(parents=True, exist_ok=True) #Creates the folder in which the model(s) are exported to
     exporters.export(model, str(output_file), tolerance=tolerance, angularTolerance= angular_tolerance)
+
+def export_kit(parameters, output_dir: Path):
+    part_builders = {
+        "base": make_base,
+        "stand": make_stand,
+        "axle": make_axle,
+        "pendulum": make_pendulum,
+    }
+
+    for name, build_part in part_builders.items():
+        part = build_part(parameters)
+        export_model_3mf(part, output_dir / f"{name}.3mf",0.1,0.1,)
