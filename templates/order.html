@@ -1,91 +1,118 @@
 <!DOCTYPE html>
+<!-- Result table, filament properties and error display are AI-assisted (Claude, Anthropic), reviewed by the group. -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Pendulum kit order</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 46rem;
+            margin: 2rem auto;
+        }
 
-{% if error %}
-<p role="alert">{{ error }}</p>
-{% endif %}
-{% if order %}
-<p role="status">
-    Order saved. Requested period {{ order.target_period_s }} s,
-    axle diameter {{ order.axle_diameter_mm }} mm.
-</p>
-{% endif %}
-<form method="post" action="{{ url_for('create_order') }}">
-    <fieldset>
-        <legend>Pendulum requirements</legend>
+        .error {
+            background: #fde8e8;
+            border: 1px solid #c00;
+            padding: .6rem;
+        }
 
-        <p>
-            <label for="target_period_s">Requested swing period (s)</label>
-            <input id="target_period_s" name="target_period_s"
-                   type="number" step="any" required>
-        </p>
+        .ok {
+            background: #e8f6ea;
+            border: 1px solid #2a7;
+            padding: .6rem;
+        }
 
-        <p>
-            <label for="axle_diameter_mm">Axle diameter (mm)</label>
-            <input id="axle_diameter_mm" name="axle_diameter_mm"
-                   type="number" step="any" required>
-        </p>
-    </fieldset>
+        .warn {
+            background: #fff6e0;
+            border: 1px solid #c90;
+            padding: .6rem;
+        }
 
-    <fieldset>
-        <legend> Choose a filament spool </legend>
-        <p>
-    <label for="base_spool_id">Spool for base</label>
-    <select id="base_spool_id" name="base_spool_id" required>
-        <option value="">Choose a spool</option>
+        table {
+            border-collapse: collapse;
+        }
 
-        {% for spool in spools %}
-            <option value="{{ spool['id'] }}">
-                {{ spool['filament']['name'] }} (spool #{{ spool['id'] }})
-            </option>
-        {% else %}
-            <option disabled>No spools available</option>
-        {% endfor %}
-    </select>
-</p>
+        td, th {
+            border: 1px solid #ccc;
+            padding: .25rem .5rem;
+            text-align: left;
+        }
+
+        label {
+            display: inline-block;
+            min-width: 17rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Order a pendulum kit</h1>
+
+    {% if error %}
+    <p role="alert" class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if result %}
+    <div role="status" class="{{ 'ok' if result.status == 'produced' else 'warn' }}">
+        <p><strong>Order {{ order_number }}: {{ result.status | upper }}</strong> &ndash; {{ result.reason }}</p>
+        {% if result.period_s %}
+        <table>
+            <tr><th>Requested period</th><td>{{ '%.3f' % result.target_period_s }} s</td></tr>
+            <tr><th>Calculated period</th><td>{{ '%.4f' % result.period_s }} s</td></tr>
+            <tr><th>Difference</th><td>{{ '%+.1f' % (result.error_s * 1000) }} ms ({{ '%+.2f' % result.error_percent }} %)</td></tr>
+            <tr><th>Arm length / weight</th><td>{{ result.arm_length_mm }} mm / size {{ result.weight_size }}</td></tr>
+            {% for part, grams in result.part_masses_g.items() %}
+            <tr><th>Mass {{ part }}</th><td>{{ '%.1f' % grams }} g</td></tr>
+            {% endfor %}
+            {% for spool_id, grams in result.filament_use_g.items() %}
+            <tr><th>Filament from spool #{{ spool_id }}</th><td>{{ '%.1f' % grams }} g</td></tr>
+            {% endfor %}
+        </table>
+        {% if result.output_dir %}<p>3MF files: <code>{{ result.output_dir }}</code></p>{% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% macro spool_select(field, label) %}
     <p>
-    <label for="side_spool_id">Spool for sides</label>
-    <select id="side_spool_id" name="side_spool_id" required>
-        <option value="">Choose a spool</option>
-
-        {% for spool in spools %}
+        <label for="{{ field }}">{{ label }}</label>
+        <select id="{{ field }}" name="{{ field }}" required {% if not spools %}disabled{% endif %}>
+            <option value="">Choose a spool</option>
+            {% for spool in spools %}
             <option value="{{ spool['id'] }}">
-                {{ spool['filament']['name'] }} (spool #{{ spool['id'] }})
+                {{ spool['filament']['name'] }} (spool #{{ spool['id'] }}):
+                {{ spool['filament']['material'] }}, {{ spool['filament']['density'] }} g/cm³,
+                {{ '%.0f' % (spool['remaining_weight'] or 0) }} g left
             </option>
-        {% else %}
+            {% else %}
             <option disabled>No spools available</option>
-        {% endfor %}
-    </select>
-</p>
-    <p>
-    <label for="pendulum_spool_id">Spool for pendulum</label>
-    <select id="pendulum_spool_id" name="pendulum_spool_id" required>
-        <option value="">Choose a spool</option>
+            {% endfor %}
+        </select>
+    </p>
+    {% endmacro %}
 
-        {% for spool in spools %}
-            <option value="{{ spool['id'] }}">
-                {{ spool['filament']['name'] }} (spool #{{ spool['id'] }})
-            </option>
-        {% else %}
-            <option disabled>No spools available</option>
-        {% endfor %}
-    </select>
-</p>
-     <p>
-    <label for="axle_spool_id">Spool for axle</label>
-    <select id="axle_spool_id" name="axle_spool_id" required>
-        <option value="">Choose a spool</option>
+    <form method="post" action="{{ url_for('create_order') }}">
+        <fieldset>
+            <legend>Pendulum requirements</legend>
+            <p>
+                <label for="target_period_s">Requested swing period (s)</label>
+                <input id="target_period_s" name="target_period_s" type="number" step="any" min="0" required>
+            </p>
+            <p>
+                <label for="axle_diameter_mm">Axle diameter (mm)</label>
+                <input id="axle_diameter_mm" name="axle_diameter_mm" type="number" step="any" min="0" value="5" required>
+            </p>
+        </fieldset>
 
-        {% for spool in spools %}
-            <option value="{{ spool['id'] }}">
-                {{ spool['filament']['name'] }} (spool #{{ spool['id'] }})
-            </option>
-        {% else %}
-            <option disabled>No spools available</option>
-        {% endfor %}
-    </select>
-</p>
+        <fieldset>
+            <legend>Choose a filament spool for each part</legend>
+            {{ spool_select("base_spool_id", "Spool for base") }}
+            {{ spool_select("side_spool_id", "Spool for stand sides") }}
+            {{ spool_select("pendulum_spool_id", "Spool for pendulum (arm + weight)") }}
+            {{ spool_select("axle_spool_id", "Spool for axle") }}
+        </fieldset>
 
-    </fieldset>
-
-    <button type="submit">Send order</button>
-</form>
+        <button type="submit" {% if not spools %}disabled{% endif %}>Send order</button>
+    </form>
+</body>
+</html>
