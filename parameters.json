@@ -13,6 +13,7 @@
   "slot_clearance_mm": 0.2,
 
   "axle_diameter_mm": 5,
+  "min_axle_diameter_mm": 4,
 
   "pendulum_cylinder_diameter_mm": 15,
   "pendulum_cylinder_clearance_mm": 0.2,

@@ -43,6 +43,22 @@
             display: inline-block;
             min-width: 17rem;
         }
+
+        .period-row {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: .4rem;
+        }
+
+        .period-row input {
+            width: 7rem;
+        }
+
+        .period-row output {
+            color: #444;
+            font-size: .9rem;
+        }
     </style>
 </head>
 <body>
@@ -61,6 +77,9 @@
             <tr><th>Calculated period</th><td>{{ '%.4f' % result.period_s }} s</td></tr>
             <tr><th>Difference</th><td>{{ '%+.1f' % (result.error_s * 1000) }} ms ({{ '%+.2f' % result.error_percent }} %)</td></tr>
             <tr><th>Arm length / weight</th><td>{{ result.arm_length_mm }} mm / size {{ result.weight_size }}</td></tr>
+            {% if result.stand_length_mm is not none %}
+            <tr><th>Stand height</th><td>{{ '%.2f' % result.stand_length_mm }} mm</td></tr>
+            {% endif %}
             {% for part, grams in result.part_masses_g.items() %}
             <tr><th>Mass {{ part }}</th><td>{{ '%.1f' % grams }} g</td></tr>
             {% endfor %}
@@ -82,7 +101,11 @@
             <option value="{{ spool['id'] }}">
                 {{ spool['filament']['name'] }} (spool #{{ spool['id'] }}):
                 {{ spool['filament']['material'] }}, {{ spool['filament']['density'] }} g/cm³,
-                {{ '%.0f' % (spool['remaining_weight'] or 0) }} g left
+                {% if spool['remaining_weight'] is none %}
+                    remaining weight unknown
+                {% else %}
+                    {{ '%.0f' % spool['remaining_weight'] }} g left
+                {% endif %}
             </option>
             {% else %}
             <option disabled>No spools available</option>
@@ -94,13 +117,25 @@
     <form method="post" action="{{ url_for('create_order') }}">
         <fieldset>
             <legend>Pendulum requirements</legend>
-            <p>
+            <p class="period-row">
                 <label for="target_period_s">Requested swing period (s)</label>
-                <input id="target_period_s" name="target_period_s" type="number" step="any" min="0" required>
+                <input id="target_period_s" name="target_period_s" type="number" step="any" min="0" required
+                       aria-describedby="period-range">
+                <output id="period-range" for="axle_diameter_mm" aria-live="polite"
+                        data-url="{{ url_for('get_period_range') }}">
+                    {% if period_range %}
+                        Min {{ '%.3f' % period_range[0] }} s · Max {{ '%.3f' % period_range[1] }} s
+                    {% else %}
+                        {{ range_error }}
+                    {% endif %}
+                </output>
             </p>
             <p>
                 <label for="axle_diameter_mm">Axle diameter (mm)</label>
-                <input id="axle_diameter_mm" name="axle_diameter_mm" type="number" step="any" min="0" value="5" required>
+                <input id="axle_diameter_mm" name="axle_diameter_mm" type="number" step="any"
+                       min="{{ min_axle_diameter_mm }}" value="{{ axle_diameter_mm }}"
+                       aria-describedby="axle-diameter-min" required>
+                <small id="axle-diameter-min">Minimum {{ min_axle_diameter_mm }} mm</small>
             </p>
         </fieldset>
 
@@ -114,5 +149,36 @@
 
         <button type="submit" {% if not spools %}disabled{% endif %}>Send order</button>
     </form>
+    <script>
+        const axleDiameter = document.getElementById("axle_diameter_mm");
+        const periodRange = document.getElementById("period-range");
+        let rangeRequest;
+
+        axleDiameter.addEventListener("change", async () => {
+            rangeRequest?.abort();
+            if (!axleDiameter.validity.valid) {
+                periodRange.textContent = axleDiameter.validity.rangeUnderflow
+                    ? `Axle diameter must be at least ${axleDiameter.min} mm.`
+                    : "Enter a valid axle diameter.";
+                return;
+            }
+
+            rangeRequest = new AbortController();
+            const url = new URL(periodRange.dataset.url, window.location.href);
+            url.searchParams.set("axle_diameter_mm", axleDiameter.value);
+            try {
+                periodRange.textContent = "Calculating range…";
+                const response = await fetch(url, { signal: rangeRequest.signal });
+                const range = await response.json();
+                periodRange.textContent = response.ok
+                    ? `Min ${range.minimum_s.toFixed(3)} s · Max ${range.maximum_s.toFixed(3)} s`
+                    : range.error;
+            } catch (error) {
+                if (error.name !== "AbortError") {
+                    periodRange.textContent = "Could not calculate the period range.";
+                }
+            }
+        });
+    </script>
 </body>
 </html>

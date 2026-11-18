@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import copy
 from dataclasses import dataclass, field
 
 from physics import PrintSettings, analyze_pendulum
-from validation import validate_parameters
+from validation import minimum_stand_length_mm, printer_build_volume_mm, validate_parameters
 
 # (length along arm, width, thickness) of the weight in mm: small -> large
 WEIGHT_SIZES = {
@@ -51,14 +50,15 @@ class Configuration:
 
 
 def with_design(parameters: dict, arm_length_mm: float, weight_size: str) -> dict:
-    """Copy of the parameters with a given arm length and weight at the arm end."""
+    """Place the weight at the arm end and raise the stand if it needs clearance."""
     length, width, thickness = WEIGHT_SIZES[weight_size]
-    p = copy.deepcopy(parameters)
+    p = parameters.copy()
     p["pendulum_arm_length_mm"] = round(arm_length_mm, 2)
     p["pendulum_weight_length_mm"] = length
     p["pendulum_weight_width_mm"] = width
     p["pendulum_weight_thickness_mm"] = thickness
-    p["pendulum_weight_position_mm"] = round(arm_length_mm - length / 2, 2)
+    p["pendulum_weight_position_mm"] = p["pendulum_arm_length_mm"] - length / 2
+    p["stand_length_mm"] = max(p["stand_length_mm"], minimum_stand_length_mm(p))
     return p
 
 
@@ -75,7 +75,7 @@ def arm_length_range(parameters: dict, weight_size: str) -> tuple[float, float] 
     hub_r = parameters["pendulum_cylinder_diameter_mm"] / 2
     length = WEIGHT_SIZES[weight_size][0]
     low = hub_r + length + 0.5                     # weight must lie outside the hub
-    high = parameters["stand_length_mm"]           # can never be longer than the stand
+    high = max(printer_build_volume_mm(parameters))
     if not is_valid(with_design(parameters, low, weight_size)):
         return None
     # Bisection on validity: valid at `low`, invalid at `high`
@@ -93,14 +93,8 @@ def _period(p, density, settings, voxel_mm):
     return r.period_s, r.mass_kg * 1000
 
 
-def configure(parameters: dict, target_period_s: float, density_g_cm3: float,
-              settings: PrintSettings | None = None) -> Configuration:
-    """Find the design whose period is closest to `target_period_s`."""
-    if settings is None:
-        settings = PrintSettings.from_parameters(parameters)
-    candidates: list[Candidate] = []
-    shortest, longest = float("inf"), 0.0
-
+def _search_bounds(parameters, density_g_cm3, settings):
+    bounds = []
     for size in WEIGHT_SIZES:
         limits = arm_length_range(parameters, size)
         if limits is None:
@@ -108,8 +102,31 @@ def configure(parameters: dict, target_period_s: float, density_g_cm3: float,
         low, high = limits
         t_low, _ = _period(with_design(parameters, low, size), density_g_cm3, settings, SEARCH_VOXEL_MM)
         t_high, _ = _period(with_design(parameters, high, size), density_g_cm3, settings, SEARCH_VOXEL_MM)
-        shortest, longest = min(shortest, t_low), max(longest, t_high)
+        bounds.append((size, low, high, t_low, t_high))
+    if not bounds:
+        raise ValueError("No pendulum design fits inside the size limits")
+    return bounds
 
+
+def _period_range(bounds):
+    return min(bound[3] for bound in bounds), max(bound[4] for bound in bounds)
+
+
+def achievable_period_range(parameters: dict) -> tuple[float, float]:
+    """Estimate the period range for the current geometry and print settings."""
+    settings = PrintSettings.from_parameters(parameters)
+    # Filament density scales both mass and inertia by the same factor.
+    return _period_range(_search_bounds(parameters, 1.0, settings))
+
+
+def configure(parameters: dict, target_period_s: float, density_g_cm3: float,
+              settings: PrintSettings | None = None) -> Configuration:
+    """Find the design whose period is closest to `target_period_s`."""
+    if settings is None:
+        settings = PrintSettings.from_parameters(parameters)
+    candidates: list[Candidate] = []
+    bounds = _search_bounds(parameters, density_g_cm3, settings)
+    for size, low, high, t_low, t_high in bounds:
         if target_period_s <= t_low:
             arm = low
         elif target_period_s >= t_high:
@@ -129,17 +146,18 @@ def configure(parameters: dict, target_period_s: float, density_g_cm3: float,
         t, m = _period(p, density_g_cm3, settings, FINAL_VOXEL_MM)
         candidates.append(Candidate(size, round(arm, 2), t, m))
 
-    if not candidates:
-        raise ValueError("No pendulum design fits inside the size limits")
-
-    best = min(candidates, key=lambda c: (round(abs(c.period_s - target_period_s), 3), c.mass_g))
+    best = min(candidates, key=lambda candidate: (
+        round(abs(candidate.period_s - target_period_s), 3),
+        with_design(parameters, candidate.arm_length_mm, candidate.weight_size)["stand_length_mm"],
+        candidate.mass_g,
+    ))
     return Configuration(
         parameters=with_design(parameters, best.arm_length_mm, best.weight_size),
         weight_size=best.weight_size,
         target_period_s=target_period_s,
         period_s=best.period_s,
         pendulum_mass_g=best.mass_g,
-        achievable_range_s=(shortest, longest),
+        achievable_range_s=_period_range(bounds),
         candidates=candidates,
     )
 

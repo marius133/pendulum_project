@@ -18,6 +18,10 @@ python -m unittest discover -s tests -t .                       # unit tests (no
 
 Orders are stored in `orders/order-<n>.json`, results in `orders/order-<n>.result.json`
 and the 3MF files in `output/order-<n>/` (one file per part type; print the stand twice).
+The result next to the order records the production status. A `needs_review` result requires
+checking the filament use in Spoolman before manually retrying the order.
+The configurator keeps the default stand length as a minimum and raises it when the selected
+arm and weight need more clearance, within the printer build volume.
 
 ## Files
 | File | Purpose |

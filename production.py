@@ -11,15 +11,18 @@ One order goes through these steps (see the activity diagram in the report):
 
 Orders that cannot be made are "rejected" (period out of reach, invalid
 geometry) or "postponed" (not enough filament). The result is saved next to
-the order as orders/order-<n>.result.json.
+the order as orders/order-<n>.result.json. An unconfirmed stock update
+requires manual review before retrying.
 
 Run `python production.py` to (re)process all orders that are new or postponed.
 """
 from __future__ import annotations
 
 import json
-import threading
+import math
+import sqlite3
 from concurrent.futures import ProcessPoolExecutor
+from contextlib import closing, contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -34,15 +37,20 @@ PROJECT_DIR = Path(__file__).resolve().parent
 ORDERS_DIR = PROJECT_DIR / "orders"
 OUTPUT_DIR = PROJECT_DIR / "output"
 
-# Only one order at a time may check the stock and register filament use,
-# otherwise two orders could both "see" the same filament (Flask is threaded).
-STOCK_LOCK = threading.Lock()
+
+@contextmanager
+def order_lock(orders_dir=None):
+    orders_dir = orders_dir or ORDERS_DIR
+    orders_dir.mkdir(exist_ok=True)
+    with closing(sqlite3.connect(orders_dir / ".orders-lock.sqlite3", timeout=30)) as lock:
+        lock.execute("BEGIN IMMEDIATE")
+        yield
 
 
 @dataclass
 class ProductionResult:
     order_number: int
-    status: str                       # "produced", "postponed" or "rejected"
+    status: str
     reason: str = ""
     target_period_s: float = 0.0
     period_s: float | None = None
@@ -51,6 +59,7 @@ class ProductionResult:
     achievable_range_s: tuple | None = None
     weight_size: str | None = None
     arm_length_mm: float | None = None
+    stand_length_mm: float | None = None
     weight_position_mm: float | None = None
     part_masses_g: dict = field(default_factory=dict)    # part -> mass of one part
     filament_use_g: dict = field(default_factory=dict)   # spool id -> grams
@@ -67,34 +76,53 @@ class Plan:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def parameters_for_order(order: Order):
+def load_kit_parameters():
     parameters = load_parameters(PROJECT_DIR / "parameters.json")
-
-    stand_clearance = (
-        parameters["axle_hole_diameter_mm"] - parameters["axle_diameter_mm"]
-    )
-
-    parameters["axle_diameter_mm"] = order.axle_diameter_mm
-    parameters["axle_hole_diameter_mm"] = order.axle_diameter_mm + stand_clearance
-
-    validate_parameters(parameters)
+    if "min_axle_diameter_mm" not in parameters:
+        raise ValueError("Missing parameter: min_axle_diameter_mm")
     return parameters
+
+
+def parameters_for_axle(axle_diameter_mm: float | None = None, *, base_parameters: dict | None = None):
+    parameters = load_kit_parameters() if base_parameters is None else base_parameters.copy()
+    if axle_diameter_mm is not None:
+        stand_clearance = parameters["axle_hole_diameter_mm"] - parameters["axle_diameter_mm"]
+        parameters["axle_diameter_mm"] = axle_diameter_mm
+        parameters["axle_hole_diameter_mm"] = axle_diameter_mm + stand_clearance
+    validate_parameters(parameters, check_design=False)
+    return parameters
+
+
+def parameters_for_order(order: Order):
+    return parameters_for_axle(order.axle_diameter_mm)
 
 
 def densities_for_order(order: Order, spools_by_id: dict) -> dict:
     """Density (g/cm^3) of the filament chosen for each part."""
-    return {part: spools_by_id[order.spool_ids[field_name]]["filament"]["density"]
-            for part, field_name in PART_TO_SPOOL_FIELD.items()}
+    densities = {}
+    for part, field_name in PART_TO_SPOOL_FIELD.items():
+        spool_id = order.spool_ids[field_name]
+        spool = spools_by_id.get(spool_id)
+        if spool is None:
+            raise ValueError(f"Selected spool #{spool_id} for {part} is no longer in stock")
+        density = (spool.get("filament") or {}).get("density")
+        if (isinstance(density, bool) or not isinstance(density, (int, float))
+                or not math.isfinite(density) or density <= 0):
+            raise ValueError(f"Selected spool #{spool_id} for {part} has no valid filament density")
+        densities[part] = density
+    return densities
 
 
 def remaining_weight(spool: dict) -> float | None:
     """Remaining filament on a spool in grams (None if Spoolman does not know)."""
     if spool.get("remaining_weight") is not None:
         return spool["remaining_weight"]
-    initial = spool.get("initial_weight") or (spool.get("filament") or {}).get("weight")
+    initial = spool.get("initial_weight")
+    if initial is None:
+        initial = (spool.get("filament") or {}).get("weight")
     if initial is None:
         return None
-    return initial - spool.get("used_weight", 0.0)
+    return initial - (spool.get("used_weight") or 0.0)
 
 
 def find_shortages(required_g: dict, spools_by_id: dict) -> list[str]:
@@ -113,7 +141,7 @@ def find_shortages(required_g: dict, spools_by_id: dict) -> list[str]:
     return shortages
 
 
-def export_order(order_number: int, parameters: dict, result: ProductionResult | None = None):
+def export_order(order_number: int, parameters: dict):
     """Write the 3MF files (and the parameters used) to output/order-<n>/."""
     from cad import export_kit   # imported here so planning works without CadQuery
 
@@ -126,8 +154,6 @@ def export_order(order_number: int, parameters: dict, result: ProductionResult |
         kit_dir = Path(temp_dir) / "kit"
         export_kit(parameters, kit_dir)
         (kit_dir / "parameters.json").write_text(json.dumps(parameters, indent=2), encoding="utf-8")
-        if result is not None:
-            (kit_dir / "result.json").write_text(json.dumps(asdict(result), indent=2), encoding="utf-8")
         kit_dir.rename(target)
     return target
 
@@ -136,8 +162,23 @@ def save_result(result: ProductionResult, orders_dir: Path | None = None):
     orders_dir = orders_dir or ORDERS_DIR
     orders_dir.mkdir(exist_ok=True)
     path = orders_dir / f"order-{result.order_number}.result.json"
-    path.write_text(json.dumps(asdict(result), indent=2), encoding="utf-8")
+    with TemporaryDirectory(dir=orders_dir) as temporary_dir:
+        temporary_path = Path(temporary_dir) / path.name
+        temporary_path.write_text(json.dumps(asdict(result), indent=2), encoding="utf-8")
+        temporary_path.replace(path)
     return path
+
+
+def load_result(order_number: int, orders_dir: Path | None = None) -> ProductionResult | None:
+    orders_dir = orders_dir or ORDERS_DIR
+    path = orders_dir / f"order-{order_number}.result.json"
+    if not path.exists():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data["achievable_range_s"] is not None:
+        data["achievable_range_s"] = tuple(data["achievable_range_s"])
+    data["filament_use_g"] = {int(spool_id): grams for spool_id, grams in data["filament_use_g"].items()}
+    return ProductionResult(**data)
 
 
 # ---------------------------------------------------------------------------
@@ -154,14 +195,20 @@ def plan_order(order_number: int, order: Order, densities: dict,
         return Plan({}, result)
 
     settings = PrintSettings.from_parameters(parameters)
-    cfg = configure(parameters, order.target_period_s, densities["pendulum"], settings)
+    try:
+        cfg = configure(parameters, order.target_period_s, densities["pendulum"], settings)
+    except ValueError as error:
+        result.reason = str(error)
+        return Plan({}, result)
     p = cfg.parameters
+    p["material_density_m3"] = densities["pendulum"] * 1000
     result.period_s = round(cfg.period_s, 4)
     result.error_s = round(cfg.error_s, 4)
     result.error_percent = round(cfg.error_percent, 2)
     result.achievable_range_s = (round(cfg.achievable_range_s[0], 3), round(cfg.achievable_range_s[1], 3))
     result.weight_size = cfg.weight_size
     result.arm_length_mm = p["pendulum_arm_length_mm"]
+    result.stand_length_mm = p["stand_length_mm"]
     result.weight_position_mm = p["pendulum_weight_position_mm"]
 
     if not cfg.within(tolerance):
@@ -182,41 +229,62 @@ def plan_order(order_number: int, order: Order, densities: dict,
 
 
 def produce(plan: Plan, spoolman: SpoolmanClient) -> ProductionResult:
-    """Steps 2-4: check stock, export 3MF and register the filament use."""
+    """Check stock, publish the 3MF files and record the outcome of filament registration."""
     result = plan.result
-    if result.status != "planned":
-        return result
-    with STOCK_LOCK:
-        spools_by_id = {s["id"]: s for s in spoolman.get_spools(include_archived=False)}  # fresh numbers
-        shortages = find_shortages(result.filament_use_g, spools_by_id)
-        if shortages:
-            result.status = "postponed"
-            result.reason = "Not enough filament: " + "; ".join(shortages)
-            return result
+    with order_lock():
+        existing = load_result(result.order_number)
+        if existing is not None and existing.status != "postponed":
+            return existing
 
+        output_dir = OUTPUT_DIR / f"order-{result.order_number}"
+        if output_dir.exists():
+            result.output_dir = str(output_dir)
+            result.status = "needs_review"
+            result.reason = "This order already has output. Check the existing files and stock."
+        elif result.status == "planned":
+            spools = {spool["id"]: spool for spool in spoolman.get_spools(include_archived=False)}
+            shortages = find_shortages(result.filament_use_g, spools)
+            if shortages:
+                result.status = "postponed"
+                result.reason = "Not enough filament: " + "; ".join(shortages)
+            else:
+                result.output_dir = str(export_order(result.order_number, plan.parameters))
+                register_filament_use(result, spoolman)
+
+        save_result(result)
+    return result
+
+
+def register_filament_use(result: ProductionResult, spoolman: SpoolmanClient):
+    result.status = "needs_review"
+    result.reason = "Filament use is unconfirmed. Check Spoolman before retrying this order."
+    save_result(result)
+    try:
+        for spool_id, grams in result.filament_use_g.items():
+            spoolman.use_filament(spool_id, grams)
+    except SpoolmanError:
+        result.reason = f"Filament update for spool #{spool_id} failed. Check Spoolman before retrying."
+    else:
         result.status = "produced"
         result.reason = (f"Period {result.period_s:.4f} s, {result.error_s * 1000:+.1f} ms "
                          f"({result.error_percent:+.2f} %) from the requested {result.target_period_s:.3f} s")
-        result.output_dir = str(OUTPUT_DIR / f"order-{result.order_number}")
-        export_order(result.order_number, plan.parameters, result)
-        for spool_id, grams in result.filament_use_g.items():
-            spoolman.use_filament(spool_id, grams)
-    return result
+
+
+def plan_from_stock(order_number, order, spools_by_id, tolerance=DEFAULT_PERIOD_TOLERANCE):
+    try:
+        densities = densities_for_order(order, spools_by_id)
+    except ValueError as error:
+        result = ProductionResult(order_number, "postponed", reason=str(error), target_period_s=order.target_period_s)
+        return Plan({}, result)
+    return plan_order(order_number, order, densities, tolerance)
 
 
 def process_order(order_number: int, order: Order, spoolman: SpoolmanClient,
                   tolerance: float = DEFAULT_PERIOD_TOLERANCE) -> ProductionResult:
     """Run one order through the whole flow and save the result."""
     spools_by_id = {s["id"]: s for s in spoolman.get_spools(include_archived=False)}
-    missing = [f for f, sid in order.spool_ids.items() if sid not in spools_by_id]
-    if missing:
-        result = ProductionResult(order_number, "postponed", target_period_s=order.target_period_s,
-                                  reason=f"Selected spool for {', '.join(missing)} is no longer in stock")
-    else:
-        plan = plan_order(order_number, order, densities_for_order(order, spools_by_id), tolerance)
-        result = produce(plan, spoolman)
-    save_result(result)
-    return result
+    plan = plan_from_stock(order_number, order, spools_by_id, tolerance)
+    return produce(plan, spoolman)
 
 
 # ---------------------------------------------------------------------------
@@ -231,22 +299,26 @@ def load_order(path: Path) -> Order:
 def pending_orders(orders_dir: Path | None = None) -> list[tuple[int, Order]]:
     """Orders without a result, or with a postponed result, sorted by number (FIFO)."""
     orders_dir = orders_dir or ORDERS_DIR
+    if not orders_dir.exists():
+        return []
     pending = []
-    for path in orders_dir.glob("order-*.json"):
-        if path.name.endswith(".result.json"):
-            continue
-        number = int(path.stem.split("-")[1])
-        result_path = orders_dir / f"order-{number}.result.json"
-        if result_path.exists():
-            status = json.loads(result_path.read_text(encoding="utf-8"))["status"]
-            if status != "postponed":
+    with order_lock(orders_dir):
+        for path in orders_dir.glob("order-*.json"):
+            if path.name.endswith(".result.json"):
                 continue
-        pending.append((number, load_order(path)))
+            number = int(path.stem.split("-")[1])
+            result = load_result(number, orders_dir)
+            if result is not None and result.status != "postponed":
+                continue
+            if (OUTPUT_DIR / f"order-{number}").exists():
+                print(f"Order {number}: existing output; skipped for review.")
+                continue
+            pending.append((number, load_order(path)))
     return sorted(pending, key=lambda item: item[0])
 
 
 def _plan_job(args):
-    return plan_order(*args)
+    return plan_from_stock(*args)
 
 
 def run_production(spoolman: SpoolmanClient | None = None, workers: int | None = None):
@@ -257,23 +329,15 @@ def run_production(spoolman: SpoolmanClient | None = None, workers: int | None =
         return []
     spools_by_id = {s["id"]: s for s in spoolman.get_spools(include_archived=False)}
 
-    jobs, results = [], []
-    for number, order in orders:
-        if all(sid in spools_by_id for sid in order.spool_ids.values()):
-            jobs.append((number, order, densities_for_order(order, spools_by_id)))
-        else:
-            results.append(ProductionResult(number, "postponed", target_period_s=order.target_period_s,
-                                            reason="A selected spool is no longer in stock"))
+    jobs = ((number, order, spools_by_id) for number, order in orders)
 
-    # Planning is CPU heavy and independent per order -> run in parallel processes
+    # Planning is CPU heavy and independent per order -> run in parallel processes.
     with ProcessPoolExecutor(max_workers=workers) as pool:
         plans = list(pool.map(_plan_job, jobs))
 
-    # Stock check, export and filament use one at a time, in order-number order
-    for plan in plans:
-        results.append(produce(plan, spoolman))
+    # Save each result as soon as the order completes.
+    results = [produce(plan, spoolman) for plan in plans]
     for result in sorted(results, key=lambda r: r.order_number):
-        save_result(result)
         print(f"Order {result.order_number}: {result.status.upper()} - {result.reason}")
     return results
 

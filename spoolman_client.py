@@ -29,7 +29,10 @@ class SpoolmanClient:
             ) from error
         if not response.ok:
             raise SpoolmanError(f"Spoolman returned {response.status_code} for {method} {path}: {response.text[:200]}")
-        return response.json()
+        try:
+            return response.json()
+        except requests.exceptions.JSONDecodeError as error:
+            raise SpoolmanError(f"Spoolman returned invalid JSON for {method} {path}") from error
 
     def get_spools(self, include_archived: bool = True):
         return self._request("GET", "/spool",
