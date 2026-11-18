@@ -1,7 +1,6 @@
 import cadquery as cq
 from pathlib import Path
 from cadquery import exporters
-from ezdxf.entities import tolerance
 
 
 #Makes the stands (two identical) that will hold the pendulum:

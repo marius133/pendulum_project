@@ -43,7 +43,7 @@ def validate_order(form_data, available_spool_ids):
     return Order(target_period_s=period_s,axle_diameter_mm=axle_diameter_mm,spool_ids=spool_ids,)
 
 
-def validate_parameters(cad_parameters):
+def validate_parameters(cad_parameters, *, check_design=True):
     required_parameters = (
       "stand_length_mm",
       "stand_width_mm",
@@ -69,6 +69,10 @@ def validate_parameters(cad_parameters):
       "pendulum_weight_position_mm",
       "minimum_pendulum_clearance_mm"
     )
+
+    # Exported geometry from older orders may predate this setting.
+    if "min_axle_diameter_mm" in cad_parameters:
+        required_parameters += ("min_axle_diameter_mm",)
 
     # Check required parameters, types and numeric values.
     for name in required_parameters:
@@ -114,6 +118,10 @@ def validate_parameters(cad_parameters):
         raise ValueError("Stand length after subtracting slot depth must be positive")
 
     # Axle and hole dimensions
+    min_axle_diameter = cad_parameters.get("min_axle_diameter_mm", 0)
+    if axle_diameter < min_axle_diameter:
+        raise ValueError(f"Axle diameter must be at least {min_axle_diameter:g} mm")
+
     if axle_diameter >= hole_diameter:
         raise ValueError("Axle diameter must be smaller than the axle hole diameter")
 
@@ -154,51 +162,84 @@ def validate_parameters(cad_parameters):
     cylinder_length = cad_parameters["pendulum_cylinder_length_mm"]
     arm_width = cad_parameters["pendulum_arm_width_mm"]
 
-    axle_height_above_base = cad_parameters["stand_length_mm"] - slot_depth - hole_from_end
-    arm_length = cad_parameters["pendulum_arm_length_mm"]
-    hub_radius = cad_parameters["pendulum_cylinder_diameter_mm"] / 2
-
-    weight_position = cad_parameters["pendulum_weight_position_mm"]
-    weight_length = cad_parameters["pendulum_weight_length_mm"]
-    weight_width = cad_parameters["pendulum_weight_width_mm"]
-
     hub_hole_diameter = axle_diameter + cad_parameters["pendulum_cylinder_clearance_mm"]
 
     if hub_hole_diameter >= cylinder_diameter:
         raise ValueError("Hub hole must be smaller than the hub outer diameter")
 
     if arm_thickness >= stand_gap:
-        raise ValueError("Arm thickness must be smaller than the stand thickness")
+        raise ValueError("Arm thickness must be smaller than the gap between the stands")
 
     if cylinder_length >= stand_gap:
         raise ValueError("Pendulum hub length must be smaller than the gap between the stands")
 
     if arm_width > cylinder_diameter:
-
         raise ValueError("Arm width must be smaller than the cylinder diameter")
 
-    # Validation of distance between the pendulum arm with weight to the base with clearance:
-    arm_reach = math.hypot(arm_length, arm_width / 2)
-    weight_reach = math.hypot(weight_position + weight_length / 2, weight_width / 2,)
-    pendulum_reach = max(arm_reach, weight_reach, hub_radius)
-    minimum_clearance = cad_parameters["minimum_pendulum_clearance_mm"]
-    clearance = axle_height_above_base - pendulum_reach
+    if check_design:
+        validate_pendulum_design(cad_parameters)
 
-    if clearance < minimum_clearance:
-        raise ValueError(f"Pendulum clearance to the base must be at least {minimum_clearance:.1f} mm. Got {clearance:.1f} mm.")
+    build_volume = sorted(printer_build_volume_mm(cad_parameters))
+    for name, size in part_bounding_boxes(cad_parameters).items():
+        if name == "pendulum" and not check_design:
+            continue
+        if any(s > b for s, b in zip(sorted(size), build_volume)):
+            raise ValueError(f"The {name} ({size[0]:.0f} x {size[1]:.0f} x {size[2]:.0f} mm) "
+                             f"does not fit in the printer build volume")
 
-    # Weight position validation:
-    # Weight edges, measured from the axle along the arm.
-    weight_start = weight_position - weight_length / 2
-    weight_end = weight_position + weight_length / 2
-    hub_radius = cad_parameters["pendulum_cylinder_diameter_mm"] / 2
-    weight_thickness = cad_parameters["pendulum_weight_thickness_mm"]
 
-    if weight_thickness >= stand_gap:
+def minimum_stand_length_mm(p):
+    arm_reach = math.hypot(p["pendulum_arm_length_mm"], p["pendulum_arm_width_mm"] / 2)
+    weight_end = p["pendulum_weight_position_mm"] + p["pendulum_weight_length_mm"] / 2
+    weight_reach = math.hypot(weight_end, p["pendulum_weight_width_mm"] / 2)
+    hub_radius = p["pendulum_cylinder_diameter_mm"] / 2
+    return (max(arm_reach, weight_reach, hub_radius)
+            + p["slot_depth_mm"] + p["hole_center_from_end_mm"]
+            + p["minimum_pendulum_clearance_mm"])
+
+
+def validate_pendulum_design(p):
+    minimum_length = minimum_stand_length_mm(p)
+    minimum_clearance = p["minimum_pendulum_clearance_mm"]
+    clearance = minimum_clearance + p["stand_length_mm"] - minimum_length
+    if p["stand_length_mm"] < minimum_length:
+        raise ValueError(f"Pendulum clearance to the base must be at least {minimum_clearance:.1f} mm. "
+                         f"Got {clearance:.1f} mm.")
+
+    hub_radius = p["pendulum_cylinder_diameter_mm"] / 2
+    weight_position = p["pendulum_weight_position_mm"]
+    half_weight_length = p["pendulum_weight_length_mm"] / 2
+
+    if p["pendulum_weight_thickness_mm"] >= p["stand_gap_mm"]:
         raise ValueError("Weight thickness must be smaller than the stand gap")
-
-    if weight_start < hub_radius:
+    if weight_position - half_weight_length < hub_radius:
         raise ValueError("The weight must lie outside the hub")
-
-    if weight_end > arm_length:
+    if weight_position + half_weight_length - p["pendulum_arm_length_mm"] > 1e-9:
         raise ValueError("The weight must not extend beyond the end of the arm")
+
+
+def printer_build_volume_mm(parameters):
+    volume = parameters.get("build_volume_mm", [250, 210, 220])
+    if not isinstance(volume, (list, tuple)) or len(volume) != 3:
+        raise ValueError("Build volume must have three dimensions")
+    if any(isinstance(dimension, bool) or not isinstance(dimension, (float, int))
+           or not math.isfinite(dimension) or dimension <= 0 for dimension in volume):
+        raise ValueError("Build volume dimensions must be finite positive numbers")
+    return volume
+
+
+def part_bounding_boxes(p):
+    """Size (x, y, z) in mm of each printed part, as modelled in cad.py."""
+    hub_r = p["pendulum_cylinder_diameter_mm"] / 2
+    pendulum_reach = max(p["pendulum_arm_length_mm"],
+                         p["pendulum_weight_position_mm"] + p["pendulum_weight_length_mm"] / 2)
+    return {
+        "base": (p["base_width_mm"], p["base_length_mm"], p["base_thickness_mm"]),
+        "stand": (p["stand_width_mm"], p["stand_length_mm"], p["stand_thickness_mm"]),
+        "axle": (p["axle_diameter_mm"], p["axle_diameter_mm"],
+                 p["stand_gap_mm"] + 2 * p["stand_thickness_mm"]),
+        "pendulum": (max(2 * hub_r, p["pendulum_arm_width_mm"], p["pendulum_weight_width_mm"]),
+                     pendulum_reach + hub_r,
+                     max(p["pendulum_cylinder_length_mm"], p["pendulum_arm_thickness_mm"],
+                         p["pendulum_weight_thickness_mm"])),
+    }

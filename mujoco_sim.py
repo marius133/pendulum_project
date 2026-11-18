@@ -1,3 +1,4 @@
+import argparse
 import math
 import time
 from pathlib import Path
@@ -21,9 +22,10 @@ MESH_DIR = PROJECT_DIR / "output" / "mujoco"
 MM = 0.001               # CadQuery works in mm, MuJoCo in metres
 
 
-def export_meshes(parameters):
+def export_meshes(parameters, mesh_dir=MESH_DIR):
     """Export each part as an STL file (in mm) that MuJoCo can load."""
-    MESH_DIR.mkdir(parents=True, exist_ok=True)
+    mesh_dir = Path(mesh_dir)
+    mesh_dir.mkdir(parents=True, exist_ok=True)
     parts = {
         "base": make_base(parameters),
         "stand": make_stand(parameters),
@@ -31,11 +33,11 @@ def export_meshes(parameters):
         "pendulum": make_pendulum(parameters),
     }
     for name, part in parts.items():
-        exporters.export(part, str(MESH_DIR / f"{name}.stl"),
+        exporters.export(part, str(mesh_dir / f"{name}.stl"),
                          tolerance=0.05, angularTolerance=0.1)
 
 
-def build_mjcf(parameters):
+def build_mjcf(parameters, mesh_dir=MESH_DIR, density=None):
     """Create the MuJoCo XML model. Positions match make_assembly() in cad.py."""
     base_thickness = parameters["base_thickness_mm"]
     stand_length = parameters["stand_length_mm"]
@@ -43,7 +45,8 @@ def build_mjcf(parameters):
     hole_from_end = parameters["hole_center_from_end_mm"]
     stand_gap = parameters["stand_gap_mm"]
     stand_thickness = parameters["stand_thickness_mm"]
-    density = parameters["material_density_m3"]  # kg/m^3
+    if density is None:
+        density = parameters["material_density_m3"]  # kg/m^3
 
     stand_z = (base_thickness / 2 - slot_depth + stand_length / 2) * MM
     axle_z = (base_thickness / 2 + stand_length - slot_depth - hole_from_end) * MM
@@ -53,7 +56,7 @@ def build_mjcf(parameters):
     # Same rotation as cq.Location(..., (1, 0, 0), 90): 90 degrees about X
     rot_x90 = "0.7071068 0.7071068 0 0"
     s = f"{MM} {MM} {MM}"
-    mesh_dir = MESH_DIR.as_posix()
+    mesh_dir = Path(mesh_dir).as_posix()
 
     return f"""
 <mujoco model="pendulum_kit">
@@ -98,8 +101,10 @@ def reset(model, data):
     mujoco.mj_forward(model, data)
 
 
-def report_physics(model, data):
-    """Print mass, inertia and period (theory vs. simulation)."""
+# measure_physics(), simulate() and the --params/--no-viewer options are AI-assisted
+# (Claude, Anthropic), refactored from our report_physics(); reviewed by the group.
+def measure_physics(model, data):
+    """Mass, inertia and period (theory vs. simulation) of the pendulum body."""
     body = model.body("pendulum").id
     mass = model.body_mass[body]
 
@@ -133,16 +138,40 @@ def report_physics(model, data):
     else:
         period_sim = float("nan")
 
+    return {"mass_kg": mass, "com_distance_m": d, "inertia_kg_m2": inertia_axis,
+            "period_theory_s": period_theory, "period_sim_s": period_sim,
+            "start_angle_deg": START_ANGLE_DEG}
+
+
+def report_physics(model, data):
+    """Print mass, inertia and period (theory vs. simulation)."""
+    r = measure_physics(model, data)
     print("\n--- Pendulum (from MuJoCo) ---")
-    print(f"Mass:                      {mass * 1000:.2f} g")
-    print(f"Axle -> centre of mass:    {d * 1000:.2f} mm")
-    print(f"Inertia about axle:        {inertia_axis:.3e} kg*m^2")
-    print(f"Period, small-angle theory:{period_theory:8.4f} s")
-    print(f"Period, simulated ({START_ANGLE_DEG:.0f} deg): {period_sim:.4f} s\n")
+    print(f"Mass:                      {r['mass_kg'] * 1000:.2f} g")
+    print(f"Axle -> centre of mass:    {r['com_distance_m'] * 1000:.2f} mm")
+    print(f"Inertia about axle:        {r['inertia_kg_m2']:.3e} kg*m^2")
+    print(f"Period, small-angle theory:{r['period_theory_s']:8.4f} s")
+    print(f"Period, simulated ({START_ANGLE_DEG:.0f} deg): {r['period_sim_s']:.4f} s\n")
+    return r
+
+
+def simulate(parameters, mesh_dir=MESH_DIR, density=None):
+    """Build the MuJoCo model for a parameter set and measure the period (no viewer)."""
+    export_meshes(parameters, mesh_dir)
+    model = mujoco.MjModel.from_xml_string(build_mjcf(parameters, mesh_dir, density))
+    data = mujoco.MjData(model)
+    return measure_physics(model, data)
 
 
 def main():
-    parameters = load_parameters(PROJECT_DIR / "parameters.json")
+    # --params lets us simulate the parameters of a produced order, e.g.
+    #   python mujoco_sim.py --params output/order-1/parameters.json
+    parser = argparse.ArgumentParser(description="Simulate the pendulum in MuJoCo")
+    parser.add_argument("--params", default=PROJECT_DIR / "parameters.json")
+    parser.add_argument("--no-viewer", action="store_true", help="only print the period")
+    args = parser.parse_args()
+
+    parameters = load_parameters(args.params)
     validate_parameters(parameters)
 
     export_meshes(parameters)
@@ -150,6 +179,8 @@ def main():
     data = mujoco.MjData(model)
 
     report_physics(model, data)
+    if args.no_viewer:
+        return
 
     # Run the viewer in real time until the window is closed
     reset(model, data)

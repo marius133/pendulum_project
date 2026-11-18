@@ -1,0 +1,15 @@
+# Spoolman material stock for the pendulum kit factory.
+# Start:  docker compose up -d      -> http://localhost:7912  (REST API under /api/v1/)
+# Stop:   docker compose down
+# A fixed image tag is used so the project runs the same way during assessment.
+# (Check that this is the version you have tested with: `docker image ls ghcr.io/donkie/spoolman`.)
+services:
+  spoolman:
+    image: ghcr.io/donkie/spoolman:0.22.1
+    restart: unless-stopped
+    ports:
+      - "7912:8000"
+    volumes:
+      - ./spoolman_data:/home/app/.local/share/spoolman
+    environment:
+      - TZ=Europe/Oslo
