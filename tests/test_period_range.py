@@ -1,3 +1,5 @@
+# AI-assisted (Claude, Anthropic): period-range and axle-diameter validation tests.
+
 import json
 import unittest
 from pathlib import Path

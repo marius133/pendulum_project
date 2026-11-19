@@ -1,4 +1,3 @@
-<!-- AI-assisted (Claude, Anthropic): written with Claude, then edited by us. -->
 cadquery>=2.4
 flask>=3.0
 requests>=2.31
