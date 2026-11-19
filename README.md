@@ -1,3 +1,4 @@
+<!-- AI-assisted (Claude, Anthropic): written with Claude, then edited by us. -->
 ## Install
 ```bash
 python -m venv .venv

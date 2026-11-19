@@ -1,4 +1,4 @@
-# AI-assisted (Claude, Anthropic): compare(), then modified by us. main() is our own. Reviewed and tested by the group.
+# AI-assisted (Claude, Anthropic): whole file, adapted from the Spoolman installation guide. Reviewed and tested by the group.
 # Spoolman material stock for the pendulum kit factory.
 # Start:  docker compose up -d      -> http://localhost:7912  (REST API under /api/v1/)
 # Stop:   docker compose down
