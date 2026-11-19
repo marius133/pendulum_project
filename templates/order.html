@@ -1,5 +1,6 @@
+<!-- AI-assisted (Claude, Anthropic): result table, filament properties and error display, then modified by us. The order form and period range display are our own. Reviewed and tested by the group. -->
 <!DOCTYPE html>
-<!-- Result table, filament properties and error display are AI-assisted (Claude, Anthropic), reviewed by the group. -->
+
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -51,14 +52,14 @@
             gap: .4rem;
         }
 
-        .period-row input {
-            width: 7rem;
-        }
+            .period-row input {
+                width: 7rem;
+            }
 
-        .period-row output {
-            color: #444;
-            font-size: .9rem;
-        }
+            .period-row output {
+                color: #444;
+                font-size: .9rem;
+            }
     </style>
 </head>
 <body>
@@ -102,9 +103,9 @@
                 {{ spool['filament']['name'] }} (spool #{{ spool['id'] }}):
                 {{ spool['filament']['material'] }}, {{ spool['filament']['density'] }} g/cm³,
                 {% if spool['remaining_weight'] is none %}
-                    remaining weight unknown
+                remaining weight unknown
                 {% else %}
-                    {{ '%.0f' % spool['remaining_weight'] }} g left
+                {{ '%.0f' % spool['remaining_weight'] }} g left
                 {% endif %}
             </option>
             {% else %}
@@ -124,9 +125,9 @@
                 <output id="period-range" for="axle_diameter_mm" aria-live="polite"
                         data-url="{{ url_for('get_period_range') }}">
                     {% if period_range %}
-                        Min {{ '%.3f' % period_range[0] }} s · Max {{ '%.3f' % period_range[1] }} s
+                    Min {{ '%.3f' % period_range[0] }} s · Max {{ '%.3f' % period_range[1] }} s
                     {% else %}
-                        {{ range_error }}
+                    {{ range_error }}
                     {% endif %}
                 </output>
             </p>
@@ -150,35 +151,35 @@
         <button type="submit" {% if not spools %}disabled{% endif %}>Send order</button>
     </form>
     <script>
-        const axleDiameter = document.getElementById("axle_diameter_mm");
-        const periodRange = document.getElementById("period-range");
-        let rangeRequest;
+                const axleDiameter = document.getElementById("axle_diameter_mm");
+                const periodRange = document.getElementById("period-range");
+                let rangeRequest;
 
-        axleDiameter.addEventListener("change", async () => {
-            rangeRequest?.abort();
-            if (!axleDiameter.validity.valid) {
-                periodRange.textContent = axleDiameter.validity.rangeUnderflow
-                    ? `Axle diameter must be at least ${axleDiameter.min} mm.`
-                    : "Enter a valid axle diameter.";
-                return;
-            }
+                axleDiameter.addEventListener("change", async () => {
+                    rangeRequest?.abort();
+                    if (!axleDiameter.validity.valid) {
+                        periodRange.textContent = axleDiameter.validity.rangeUnderflow
+                            ? `Axle diameter must be at least ${axleDiameter.min} mm.`
+                            : "Enter a valid axle diameter.";
+                        return;
+                    }
 
-            rangeRequest = new AbortController();
-            const url = new URL(periodRange.dataset.url, window.location.href);
-            url.searchParams.set("axle_diameter_mm", axleDiameter.value);
-            try {
-                periodRange.textContent = "Calculating range…";
-                const response = await fetch(url, { signal: rangeRequest.signal });
-                const range = await response.json();
-                periodRange.textContent = response.ok
-                    ? `Min ${range.minimum_s.toFixed(3)} s · Max ${range.maximum_s.toFixed(3)} s`
-                    : range.error;
-            } catch (error) {
-                if (error.name !== "AbortError") {
-                    periodRange.textContent = "Could not calculate the period range.";
-                }
-            }
-        });
+                    rangeRequest = new AbortController();
+                    const url = new URL(periodRange.dataset.url, window.location.href);
+                    url.searchParams.set("axle_diameter_mm", axleDiameter.value);
+                    try {
+                        periodRange.textContent = "Calculating range…";
+                        const response = await fetch(url, { signal: rangeRequest.signal });
+                        const range = await response.json();
+                        periodRange.textContent = response.ok
+                            ? `Min ${range.minimum_s.toFixed(3)} s · Max ${range.maximum_s.toFixed(3)} s`
+                            : range.error;
+                    } catch (error) {
+                        if (error.name !== "AbortError") {
+                            periodRange.textContent = "Could not calculate the period range.";
+                        }
+                    }
+                });
     </script>
 </body>
 </html>

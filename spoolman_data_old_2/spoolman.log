@@ -1,0 +1,138 @@
+2026-11-19 10:19:22:INFO:Starting Spoolman v0.22.1 (commit: 1888240) (built: 2025-03-18 20:55:07+00:00)
+2026-11-19 10:19:22:INFO:Using data directory: /home/app/.local/share/spoolman
+2026-11-19 10:19:22:INFO:Using logs directory: /home/app/.local/share/spoolman
+2026-11-19 10:19:22:INFO:Using backups directory: /home/app/.local/share/spoolman/backups
+2026-11-19 10:19:22:INFO:Setting up database...
+2026-11-19 10:19:22:INFO:No database type specified, using a default SQLite database located at "/home/app/.local/share/spoolman/spoolman.db"
+2026-11-19 10:19:22:INFO:Performing migrations...
+2026-11-19 10:19:23:INFO:Scheduling automatic database backup for midnight.
+2026-11-19 10:19:23:INFO:Scheduling external DB sync.
+2026-11-19 10:19:23:INFO:Startup complete.
+2026-11-19 10:19:23:INFO:Syncing external DB.
+2026-11-19 10:19:23:INFO:HTTP Request: GET https://donkie.github.io/SpoolmanDB/filaments.json "HTTP/1.1 200 OK"
+2026-11-19 10:19:24:INFO:HTTP Request: GET https://donkie.github.io/SpoolmanDB/materials.json "HTTP/1.1 200 OK"
+2026-11-19 10:19:24:INFO:External DB synced. Filaments: 10058, Materials: 34
+2026-11-19 10:22:20:INFO:Client 172.18.0.1 is now listening on pool spool
+2026-11-19 10:22:20:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:22:20:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:22:20:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:24:44:INFO:Client 172.18.0.1 has stopped listening on pool spool
+2026-11-19 10:24:44:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:24:44:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:24:44:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:25:21:INFO:Client 172.18.0.1 is now listening on pool spool
+2026-11-19 10:25:21:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:25:21:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:25:21:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:25:21:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:25:21:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:25:21:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:25:21:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:25:22:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:25:22:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:25:22:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:25:39:INFO:Client 172.18.0.1 has stopped listening on pool spool
+2026-11-19 10:25:39:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:25:39:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:25:39:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:25:39:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:25:39:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 is now listening on pool spool
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:25:47:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:36:06:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:36:06:INFO:Client 172.18.0.1 has stopped listening on pool spool
+2026-11-19 10:36:06:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:36:06:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:36:06:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:36:22:INFO:Client 172.18.0.1 is now listening on pool spool
+2026-11-19 10:36:22:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:36:22:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:36:22:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:36:22:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:36:32:INFO:Client 172.18.0.1 has stopped listening on pool spool
+2026-11-19 10:36:32:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:36:32:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:36:32:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:36:32:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:36:36:INFO:Client 172.18.0.1 is now listening on pool spool
+2026-11-19 10:36:36:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:36:36:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:36:36:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:36:36:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:47:38:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:47:38:INFO:Client 172.18.0.1 has stopped listening on pool spool
+2026-11-19 10:47:38:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:47:38:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:47:38:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:47:40:INFO:Client 172.18.0.1 is now listening on pool spool
+2026-11-19 10:47:40:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:47:40:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:47:40:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:47:40:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:47:46:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:47:46:INFO:Client 172.18.0.1 has stopped listening on pool spool
+2026-11-19 10:47:46:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:47:46:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:47:46:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:47:46:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 is now listening on pool spool
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:48:02:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:48:09:INFO:Client 172.18.0.1 has stopped listening on pool spool
+2026-11-19 10:48:09:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:48:09:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:48:09:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:48:09:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:48:09:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:48:31:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:48:31:INFO:Client 172.18.0.1 is now listening on pool spool
+2026-11-19 10:48:31:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:48:31:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:48:31:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:48:31:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:53:19:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:53:19:INFO:Client 172.18.0.1 has stopped listening on pool spool
+2026-11-19 10:53:19:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:53:19:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:53:19:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 10:53:26:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:53:31:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 10:53:31:INFO:Client 172.18.0.1 is now listening on pool spool
+2026-11-19 10:53:31:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:53:31:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:53:31:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:53:31:INFO:Client 172.18.0.1 is now listening on pool spool,1
+2026-11-19 10:53:31:INFO:Client 172.18.0.1 is now listening on pool spool,2
+2026-11-19 10:53:31:INFO:Client 172.18.0.1 is now listening on pool spool,3
+2026-11-19 10:53:31:INFO:Client 172.18.0.1 is now listening on pool spool,4
+2026-11-19 10:53:32:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 10:53:32:INFO:Client 172.18.0.1 has stopped listening on pool spool,2
+2026-11-19 10:53:32:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 11:00:59:INFO:Client 172.18.0.1 has stopped listening on pool spool,3
+2026-11-19 11:00:59:INFO:Client 172.18.0.1 has stopped listening on pool spool
+2026-11-19 11:00:59:INFO:Client 172.18.0.1 has stopped listening on pool spool,1
+2026-11-19 11:00:59:INFO:Client 172.18.0.1 has stopped listening on pool spool,4
+2026-11-19 11:00:59:INFO:Client 172.18.0.1 has stopped listening on pool spool,2

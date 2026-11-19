@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): whole file. Reviewed and tested by the group.
 """In-memory stand-in for SpoolmanClient, used by the tests (no Docker needed)."""
 from spoolman_client import SpoolmanUnavailableError
 

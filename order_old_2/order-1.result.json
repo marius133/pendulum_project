@@ -1,0 +1,29 @@
+{
+  "order_number": 1,
+  "status": "produced",
+  "reason": "Period 0.4000 s, -0.0 ms (-0.01 %) from the requested 0.400 s",
+  "target_period_s": 0.4,
+  "period_s": 0.4,
+  "error_s": -0.0,
+  "error_percent": -0.01,
+  "achievable_range_s": [
+    0.298,
+    0.885
+  ],
+  "weight_size": "S",
+  "arm_length_mm": 48.65,
+  "stand_length_mm": 100.0,
+  "weight_position_mm": 43.65,
+  "part_masses_g": {
+    "base": 25.66,
+    "stand": 6.84,
+    "axle": 1.01,
+    "pendulum": 4.2
+  },
+  "filament_use_g": {
+    "1": 26.67,
+    "2": 13.68,
+    "3": 4.2
+  },
+  "output_dir": "C:\\Users\\teter\\source\\repos\\pendulum_project\\output\\order-1"
+}

@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): ProductionResult, Plan, remaining_weight(), find_shortages(), plan_order(), export_order(), load_order(); save_result(), process_order(), pending_orders() and run_production() were then modified by us. order_lock(), produce(), register_filament_use(), load_result(), parameters_for_axle() and plan_from_stock() are our own. Reviewed and tested by the group.
 """Production of one or more customer orders.
 
 One order goes through these steps (see the activity diagram in the report):

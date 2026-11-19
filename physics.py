@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): voxel model, shell and infill model, centre of mass, inertia and period. calculate_mass() is our own. Reviewed and tested by the group.
 """Mass, centre of mass, moment of inertia and swing period of the kit.
 
 The parts are described with the same parameters as in cad.py, but instead of

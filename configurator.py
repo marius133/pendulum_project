@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): weight sizes, Candidate, Configuration, is_valid(); with_design(), arm_length_range() and configure() were then modified by us. achievable_period_range(), _search_bounds() and _period_range() are our own. Reviewed and tested by the group.
 from __future__ import annotations
 
 from dataclasses import dataclass, field

@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): fake_export, setUp/tearDown and the tests order_is_produced, not_enough_filament, unreachable_period and spoolman_down. The other three tests are our own. Reviewed by the group.
 """Runs orders through production with a fake Spoolman and a fake 3MF export."""
 import json
 from dataclasses import asdict

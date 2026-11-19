@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): measure_physics(), simulate() and the --params/--no-viewer options, refactored from our own report_physics(). The MuJoCo model, report_physics() and the viewer are our own. Reviewed and tested by the group.
 import argparse
 import math
 import time
@@ -101,8 +102,7 @@ def reset(model, data):
     mujoco.mj_forward(model, data)
 
 
-# measure_physics(), simulate() and the --params/--no-viewer options are AI-assisted
-# (Claude, Anthropic), refactored from our report_physics(); reviewed by the group.
+
 def measure_physics(model, data):
     """Mass, inertia and period (theory vs. simulation) of the pendulum body."""
     body = model.body("pendulum").id

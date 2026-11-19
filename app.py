@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): Spoolman error handling and the result handling in create_order(), then modified by us. The order form, save_order() and /period-range are our own. Reviewed and tested by the group.
 import json
 from dataclasses import asdict
 from itertools import count
@@ -22,8 +23,7 @@ app = Flask(__name__)
 spoolman = SpoolmanClient()
 
 
-# Error handling for Spoolman and the production result in create_order() are
-# AI-assisted (Claude, Anthropic), reviewed and tested by the group.
+
 def load_spools():
     """Active spools from Spoolman, or ([], message) if the stock is not available."""
     try:
