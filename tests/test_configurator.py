@@ -25,6 +25,8 @@ class ConfiguratorTests(unittest.TestCase):
 
     def test_stand_does_not_exceed_a_smaller_build_volume(self):
         self.p["build_volume_mm"] = [120, 110, 125]
+        self.p["base_width_mm"] = 80.0
+        self.p["base_length_mm"] = 100.0
         cfg = configure(self.p, 0.70, 1.24)
         self.assertFalse(cfg.within())
         self.assertLessEqual(cfg.parameters["stand_length_mm"], 125)
