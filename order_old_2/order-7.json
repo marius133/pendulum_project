@@ -1,0 +1,10 @@
+{
+    "target_period_s": 1.0,
+    "axle_diameter_mm": 5.0,
+    "spool_ids": {
+        "base": 1,
+        "side": 1,
+        "pendulum": 1,
+        "axle": 1
+    }
+}

@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): setUp and the tests reachable_target, unreachable_target and longer_target. The two stand tests are our own. Reviewed by the group.
 import unittest
 
 from configurator import configure

@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): whole file. Reviewed and tested by the group.
 import math
 import unittest
 

@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): SpoolmanClient class and exceptions, refactored from our own functions. Reviewed and tested by the group.
 """Thin client for the Spoolman REST API (material stock).
 
 Spoolman API documentation: http://localhost:7912/api/v1/docs

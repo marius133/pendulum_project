@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): part_bounding_boxes() and the build-volume check in validate_parameters(). The rest is our own. Reviewed and tested by the group.
 import math
 import json
 from order import Order

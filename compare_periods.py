@@ -1,3 +1,4 @@
+# AI-assisted (Claude, Anthropic): compare(), then modified by us. main() is our own. Reviewed and tested by the group.
 import json
 import sys
 
